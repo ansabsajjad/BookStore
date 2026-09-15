@@ -313,6 +313,14 @@
   }
   input[type=checkbox]{ width:auto; min-height:0; accent-color:var(--primary); }
 
+  /* A button standing in a form row next to labelled fields. The hidden label
+     reserves exactly the height of a real one, so the button's top edge lines
+     up with the inputs beside it instead of sinking to the bottom of the row
+     whenever a neighbouring field carries a hint line underneath it. */
+  .field-action{ display:flex; flex-direction:column; align-items:flex-start; }
+  .field-action > label{ visibility:hidden; }
+  @media (max-width:860px){ .field-action > label{ display:none; } }
+
   .row{ display:grid; gap:14px; }
   .row.cols-4{ grid-template-columns:repeat(4,minmax(0,1fr)); }
   .row.cols-3{ grid-template-columns:repeat(3,minmax(0,1fr)); }
@@ -324,9 +332,11 @@
   .input-group input{ flex:1 1 auto; min-width:0; }
   .search{ margin-bottom:14px; }
   /* A search box sharing a row with another control must not carry its own
-     bottom margin — the grid stretches its neighbour, which then looks taller. */
-  .row > .search{ margin-bottom:0; }
-  .row:has(> .search){ margin-bottom:14px; }
+     bottom margin — the grid stretches its neighbour, which then looks taller.
+     Matched by descent, not direct child, so it still holds once the field has
+     been wrapped for its clear button. */
+  .row .search, .row .field-clear-wrap:has(> .search){ margin-bottom:0; }
+  .row:has(.search){ margin-bottom:14px; }
 
   /* ============================ BUTTONS ============================ */
   button.btn, label.btn{
@@ -435,21 +445,33 @@
   .field-clear-wrap{ position:relative; display:block; }
   .input-group > .field-clear-wrap{ flex:1 1 auto; min-width:0; }
   .field-clear-wrap > input, .field-clear-wrap > select, .field-clear-wrap > textarea{ width:100%; }
+  /* A field's own bottom margin has to move out to the wrapper, or the wrapper
+     grows taller than the field and the cross — pinned to the wrapper — hangs
+     below the box it belongs to. */
+  .field-clear-wrap > .search{ margin-bottom:0; }
+  .field-clear-wrap:has(> .search){ margin-bottom:14px; }
+
+  /* A round chip rather than a bare glyph: on a wide search box a plain grey
+     cross is easy to miss, and this reads as something you can press. */
   .field-clear{
-    position:absolute; top:1px; bottom:1px; right:1px; width:30px;
+    position:absolute; top:50%; right:7px; transform:translateY(-50%);
+    width:24px; height:24px; border-radius:50%;
     display:none; align-items:center; justify-content:center;
-    padding:0; border:none; background:none; cursor:pointer;
-    color:var(--sub); border-radius:var(--r-2xs);
-    transition:color var(--dur), background var(--dur);
+    padding:0; cursor:pointer;
+    border:1px solid var(--line-2);
+    background:var(--fill); color:var(--ink-strong);
+    transition:color var(--dur), background var(--dur), border-color var(--dur);
   }
   .field-clear.show{ display:flex; }
-  .field-clear:hover{ color:var(--error); background:var(--error-bg); }
-  .field-clear.past-toggle{ right:36px; }   /* left of a combo's chevron   */
-  .field-clear.past-native{ right:26px; }   /* left of a date/select arrow */
-  .field-clear.at-top{ top:3px; bottom:auto; height:30px; right:3px; }
-  input.has-clear, select.has-clear, textarea.has-clear{ padding-right:34px; }
-  input.has-clear.pad-native, select.has-clear{ padding-right:56px; }
-  .combo input.has-clear{ padding-right:68px; }
+  .field-clear:hover{ background:var(--error-bg); color:var(--error); border-color:transparent; }
+  .field-clear:active{ transform:translateY(-50%) scale(.92); }
+  .field-clear.past-toggle{ right:41px; }   /* left of a combo's chevron */
+  .field-clear.past-native{ right:31px; }   /* left of a dropdown's arrow */
+  .field-clear.at-top{ top:9px; transform:none; }
+  .field-clear.at-top:active{ transform:scale(.92); }
+  input.has-clear, textarea.has-clear{ padding-right:38px; }
+  select.has-clear{ padding-right:62px; }
+  .combo input.has-clear{ padding-right:72px; }
   /* The up/down spinner would sit under the cross, and nobody steps a price
      one rupee at a time — so on the fields that carry a cross it goes. The
      quantity boxes in the bill and the returns table keep theirs; they have
@@ -1055,7 +1077,8 @@
           <input type="date" id="dueDate">
           <div class="muted" id="dueHint" style="margin-top:3px;">&nbsp;</div>
         </div>
-        <div style="align-self:end;">
+        <div class="field-action">
+          <label aria-hidden="true">&nbsp;</label>
           <button class="btn secondary" type="button" id="payAllBtn" onclick="fillReceivedFull()">Received in full</button>
         </div>
       </div>
@@ -1230,8 +1253,8 @@
       <div class="row cols-4 sales-filter">
         <div><label>From</label><input type="date" id="salesFrom" onchange="renderSales()"></div>
         <div><label>To</label><input type="date" id="salesTo" onchange="renderSales()"></div>
-        <div style="align-self:end;"><button class="btn secondary" onclick="clearSalesFilter()">Clear Filter</button></div>
-        <div style="align-self:end;"><button class="btn" onclick="exportSalesCSV()">⬇️ Export CSV</button></div>
+        <div class="field-action"><label aria-hidden="true">&nbsp;</label><button class="btn secondary" onclick="clearSalesFilter()">Clear Filter</button></div>
+        <div class="field-action"><label aria-hidden="true">&nbsp;</label><button class="btn" onclick="exportSalesCSV()">⬇️ Export CSV</button></div>
       </div>
       <div class="table-wrap" style="margin-top:10px;"><table>
         <thead><tr><th>Receipt #</th><th>Date</th><th>Customer</th><th>Items</th><th>Total</th><th>Payment</th><th></th></tr></thead>
@@ -4052,7 +4075,7 @@ function toggleTheme(){
    screen that watches a field reacts exactly as if you had deleted it by hand.
    ========================================================================== */
 
-const CLEAR_ICON = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+const CLEAR_ICON = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
 const CLEAR_SKIP_TYPES = new Set(['file','checkbox','radio','hidden','submit','button','image','range','color']);
 
 function clearableFields(){
@@ -4090,7 +4113,7 @@ function enhanceClears(){
          not move, so the cross goes to the left of it. A date field's calendar
          button does follow the padding, so there the cross can sit flush at
          the edge like every other field and the calendar tucks in beside it. */
-      if(el.tagName === 'SELECT'){ btn.classList.add('past-native'); el.classList.add('pad-native'); }
+      if(el.tagName === 'SELECT') btn.classList.add('past-native');
       if(el.tagName === 'TEXTAREA') btn.classList.add('at-top');
       const wrap = document.createElement('span');
       wrap.className = 'field-clear-wrap';
