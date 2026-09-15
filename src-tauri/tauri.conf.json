@@ -45,7 +45,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDQzNjU3OUEzMzJFRjE4NzgKUldSNEdPOHlvM2xsUXhuM0VPMHdPaEtGdW90WWVTRXVHSVFkWFB1WjFVUkhWc1BWeU1jZzVKOWcK",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEZBQjA4MDc2OUVGMDQ5NTUKUldSVlNmQ2Vkb0N3K2h3SmZIdmw0YkgwS0lNdUpnemVzVzlhODZCNEh3TnZtMEM3Q1hyZU5NMm4K",
       "endpoints": [
         "https://github.com/ansabsajjad/BookStore/releases/latest/download/latest.json"
       ],
