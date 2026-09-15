@@ -649,6 +649,54 @@
   }
   .wipe-actions{ display:flex; gap:10px; justify-content:flex-end; margin-top:18px; }
 
+  /* ===================== DUES, PAYMENTS AND RETURNS ===================== */
+  .pill{
+    display:inline-block; padding:3px 10px; border-radius:999px;
+    font-size:0.75rem; font-weight:600; white-space:nowrap;
+    background:var(--fill); color:var(--sub);
+  }
+  .pill.ok  { background:var(--success-bg); color:var(--success); }
+  .pill.warn{ background:var(--warning-bg); color:var(--warning); }
+  .pill.bad { background:var(--error-bg); color:var(--error); }
+  td.nowrap{ white-space:nowrap; }
+  td.nowrap > *{ vertical-align:middle; }
+  td.nowrap > * + *{ margin-left:6px; }
+
+  .nav-badge{
+    margin-left:auto; min-width:20px; height:20px; padding:0 6px;
+    display:inline-flex; align-items:center; justify-content:center;
+    border-radius:999px; background:var(--error); color:#fff;
+    font-size:0.6875rem; font-weight:700;
+  }
+
+  .totals .prev-due  { color:var(--error); font-weight:600; }
+  .totals .prev-credit{ color:var(--success); font-weight:600; }
+  .totals > div > span{ margin-left:10px; }
+
+  #pay-modal, #return-modal{
+    display:none; position:fixed; inset:0; z-index:115;
+    align-items:center; justify-content:center; padding:20px;
+    background:color-mix(in oklab, var(--brand-navy) 55%, transparent);
+    backdrop-filter:blur(5px); -webkit-backdrop-filter:blur(5px);
+  }
+  #pay-modal.show, #return-modal.show{ display:flex; }
+  #pay-modal.show > *, #return-modal.show > *{ animation:pop .2s ease-out both; }
+  @media (prefers-reduced-motion: reduce){ #pay-modal.show > *, #return-modal.show > *{ animation:none; } }
+  .sheet-box{
+    background:var(--paper); border-radius:var(--r-2xl);
+    width:100%; max-width:520px; max-height:88vh; overflow:auto; padding:26px 28px;
+    box-shadow:var(--shadow-lg);
+  }
+  .sheet-box.wide{ max-width:780px; }
+  .sheet-box h2{ margin:0 0 6px; font-size:1.125rem; }
+  .sheet-note{
+    margin-top:14px; padding:12px 14px; border-radius:var(--r-2xs);
+    background:var(--fill); font-size:0.8125rem; color:var(--ink); line-height:1.6;
+  }
+  .sheet-actions{ display:flex; gap:10px; justify-content:flex-end; margin-top:18px; }
+  #returnBody input[type=number]{ width:84px; min-height:34px; padding:6px 8px; text-align:center; }
+  #returnBody select{ min-height:34px; padding:6px 8px; font-size:0.8125rem; }
+
   /* ============================ LOGIN ============================ */
   #login-screen{
     position:fixed; inset:0; z-index:200;
@@ -848,6 +896,7 @@
     <button class="tab-btn" data-tab="inventory" data-title="Inventory"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8.6v6.9a2 2 0 0 1-1.1 1.8l-7 3.4a2 2 0 0 1-1.8 0l-7-3.4A2 2 0 0 1 3 15.5V8.6"/><path d="M3.4 7.3l8-3.9a1.6 1.6 0 0 1 1.4 0l8 3.9a.8.8 0 0 1 0 1.4l-8 3.9a1.6 1.6 0 0 1-1.4 0l-8-3.9a.8.8 0 0 1 0-1.4z"/></svg><span>Inventory</span></button>
     <button class="tab-btn" data-tab="suppliers" data-title="Suppliers"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6.5h10.5v9H3z"/><path d="M13.5 9.5H18l3 3v3h-7.5z"/><circle cx="7" cy="18" r="1.9"/><circle cx="17" cy="18" r="1.9"/></svg><span>Suppliers</span></button>
     <button class="tab-btn" data-tab="customers" data-title="Customers"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 19.5V18a4 4 0 0 0-4-4H6.5a4 4 0 0 0-4 4v1.5"/><circle cx="9.2" cy="7.5" r="3.3"/><path d="M21.5 19.5V18a4 4 0 0 0-3-3.87"/><path d="M15.8 4.4a4 4 0 0 1 0 6.2"/></svg><span>Customers</span></button>
+    <button class="tab-btn" data-tab="dues" data-title="Dues &amp; Payments"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5A2.5 2.5 0 0 1 5.5 5H18a2 2 0 0 1 2 2v1"/><path d="M3 7.5v9A2.5 2.5 0 0 0 5.5 19H19a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2H5.5"/><circle cx="16.5" cy="14" r="1.2"/></svg><span>Dues</span><span class="nav-badge" id="duesNavBadge" style="display:none;"></span></button>
     <button class="tab-btn" data-tab="sales" data-title="Sales History"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.2 12a8.8 8.8 0 1 0 2.5-6.2"/><path d="M3 4.2v5h5"/><path d="M12 8v4.4l3 1.8"/></svg><span>Sales History</span></button>
     <button class="tab-btn" data-tab="settings" data-title="Settings"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.1"/><path d="M19.1 14.4a1.5 1.5 0 0 0 .3 1.7l.1.1a1.9 1.9 0 1 1-2.6 2.6l-.1-.1a1.5 1.5 0 0 0-1.7-.3 1.5 1.5 0 0 0-.9 1.4v.2a1.9 1.9 0 1 1-3.8 0V20a1.5 1.5 0 0 0-1-1.4 1.5 1.5 0 0 0-1.7.3l-.1.1a1.9 1.9 0 1 1-2.6-2.6l.1-.1a1.5 1.5 0 0 0 .3-1.7 1.5 1.5 0 0 0-1.4-.9h-.2a1.9 1.9 0 1 1 0-3.8H4a1.5 1.5 0 0 0 1.4-1 1.5 1.5 0 0 0-.3-1.7l-.1-.1a1.9 1.9 0 1 1 2.6-2.6l.1.1a1.5 1.5 0 0 0 1.7.3H9.6a1.5 1.5 0 0 0 .9-1.4V4a1.9 1.9 0 1 1 3.8 0v.1a1.5 1.5 0 0 0 .9 1.4 1.5 1.5 0 0 0 1.7-.3l.1-.1a1.9 1.9 0 1 1 2.6 2.6l-.1.1a1.5 1.5 0 0 0-.3 1.7v.1a1.5 1.5 0 0 0 1.4.9h.2a1.9 1.9 0 1 1 0 3.8H20a1.5 1.5 0 0 0-1.4.9z"/></svg><span>Settings</span></button>
   </nav>
@@ -884,6 +933,7 @@
 
   <!-- DASHBOARD TAB -->
   <div class="tab-pane" id="tab-dashboard">
+    <div id="duesDashBanner"></div>
     <div id="reorderBanner"></div>
     <div class="card">
       <h2>Inventory at a glance</h2>
@@ -964,11 +1014,28 @@
         </div>
       </div>
 
+      <div class="row cols-3" style="margin-top:10px;">
+        <div>
+          <label>Amount Received</label>
+          <input type="number" id="amtReceived" min="0" step="0.01" placeholder="0.00">
+          <div class="muted" id="receivedHint" style="margin-top:3px;">Leave blank if he is paying the bill in full.</div>
+        </div>
+        <div>
+          <label>Payment Due By</label>
+          <input type="date" id="dueDate">
+          <div class="muted" id="dueHint" style="margin-top:3px;">&nbsp;</div>
+        </div>
+        <div style="align-self:end;">
+          <button class="btn secondary" type="button" id="payAllBtn" onclick="fillReceivedFull()">Received in full</button>
+        </div>
+      </div>
+
       <div class="totals">
         <div>Subtotal: <span id="sumSubtotal">Rs.0.00</span></div>
         <div>Discount: <span id="sumDiscount">-Rs.0.00</span></div>
         <div>Tax: <span id="sumTax">+Rs.0.00</span></div>
         <div class="grand">Total: <span id="sumTotal">Rs.0.00</span></div>
+        <div id="creditLines"></div>
       </div>
 
       <div class="action-row" style="margin-top:14px; text-align:right;">
@@ -1086,9 +1153,40 @@
       <h2>Customers</h2>
       <input class="search" type="text" id="custSearch" placeholder="Search customers..." oninput="renderCustomers()">
       <div class="table-wrap"><table>
-        <thead><tr><th>Name</th><th>Phone</th><th>Total Spent</th><th>Orders</th><th></th></tr></thead>
+        <thead><tr><th>Name</th><th>Phone</th><th>Total Spent</th><th>Orders</th><th>Balance</th><th></th></tr></thead>
         <tbody id="custTableBody"></tbody>
       </table></div>
+    </div>
+  </div>
+
+  <!-- DUES TAB -->
+  <div class="tab-pane" id="tab-dues" style="display:none;">
+    <div id="duesBanner"></div>
+    <div class="card">
+      <h2>Receivables</h2>
+      <div class="stat-grid" id="duesStats"></div>
+    </div>
+
+    <div class="card">
+      <div class="flex-between">
+        <h2>🔔 Bills to collect</h2>
+        <span class="muted" id="duesAlertCount"></span>
+      </div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Receipt #</th><th>Customer</th><th>Bill date</th><th>Due by</th><th>Outstanding</th><th>Status</th><th></th></tr></thead>
+        <tbody id="duesAlertBody"></tbody>
+      </table></div>
+      <p class="muted" id="duesAlertEmpty" style="display:none;">Nothing overdue or due soon. 🎉</p>
+    </div>
+
+    <div class="card">
+      <h2>Customer balances</h2>
+      <input class="search" type="text" id="duesSearch" placeholder="Search customers...">
+      <div class="table-wrap"><table>
+        <thead><tr><th>Customer</th><th>Phone</th><th>Bills</th><th>Billed</th><th>Received</th><th>Balance</th><th></th></tr></thead>
+        <tbody id="duesTableBody"></tbody>
+      </table></div>
+      <p class="muted" style="margin-top:10px;">Payments and returns always settle the oldest unpaid bill first.</p>
     </div>
   </div>
 
@@ -1106,7 +1204,7 @@
         <div style="align-self:end;"><button class="btn" onclick="exportSalesCSV()">⬇️ Export CSV</button></div>
       </div>
       <div class="table-wrap" style="margin-top:10px;"><table>
-        <thead><tr><th>Receipt #</th><th>Date</th><th>Customer</th><th>Items</th><th>Total</th><th></th></tr></thead>
+        <thead><tr><th>Receipt #</th><th>Date</th><th>Customer</th><th>Items</th><th>Total</th><th>Payment</th><th></th></tr></thead>
         <tbody id="salesTableBody"></tbody>
       </table></div>
     </div>
@@ -1140,6 +1238,31 @@
           <option value="thermal">Thermal printer (narrow roll)</option>
           <option value="a4">Regular printer (A4 / Letter)</option>
         </select>
+      </div>
+      <div style="margin-top:14px;">
+        <button class="btn" onclick="saveSettings()">Save Settings</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Credit &amp; Returns</h2>
+      <p class="muted">Defaults used when a customer takes goods without paying in full. You can still change the date on any individual bill.</p>
+      <div class="row cols-3" style="margin-top:12px;">
+        <div>
+          <label for="setCreditDays">Default credit period (days)</label>
+          <input type="number" id="setCreditDays" min="0" step="1">
+          <div class="muted" style="margin-top:3px;">Fills in the due date on an unpaid bill.</div>
+        </div>
+        <div>
+          <label for="setReminderDays">Remind me this many days early</label>
+          <input type="number" id="setReminderDays" min="0" step="1">
+          <div class="muted" style="margin-top:3px;">Bills show up on the Dues page before they fall due.</div>
+        </div>
+        <div>
+          <label for="setReturnDays">Return window (days)</label>
+          <input type="number" id="setReturnDays" min="0" step="1">
+          <div class="muted" style="margin-top:3px;">A warning only — you are never blocked from accepting a return.</div>
+        </div>
       </div>
       <div style="margin-top:14px;">
         <button class="btn" onclick="saveSettings()">Save Settings</button>
@@ -1199,6 +1322,67 @@
   </div>
 </div>
 
+<!-- Receive Payment Modal -->
+<div id="pay-modal" role="dialog" aria-modal="true" aria-labelledby="payTitle">
+  <div class="sheet-box">
+    <h2 id="payTitle">Receive Payment</h2>
+    <p class="muted" id="payWho"></p>
+    <div class="row cols-2" style="margin-top:12px;">
+      <div><label for="payAmount">Amount received</label><input type="number" id="payAmount" min="0" step="0.01" placeholder="0.00"></div>
+      <div><label for="payDate">Date</label><input type="date" id="payDate"></div>
+    </div>
+    <div class="row cols-2" style="margin-top:10px;">
+      <div><label for="payMethod">Method</label>
+        <select id="payMethod">
+          <option>Cash</option>
+          <option>Card</option>
+          <option>EasyPaisa / Online</option>
+          <option>Bank Transfer</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div><label for="payNote">Note (optional)</label><input type="text" id="payNote" placeholder="e.g. collected at shop"></div>
+    </div>
+    <div class="sheet-note" id="payAfter"></div>
+    <div class="sheet-actions">
+      <button class="btn secondary" type="button" onclick="closePayModal()">Cancel</button>
+      <button class="btn" type="button" onclick="savePayment()">Record Payment</button>
+    </div>
+  </div>
+</div>
+
+<!-- Return Modal -->
+<div id="return-modal" role="dialog" aria-modal="true" aria-labelledby="returnTitle">
+  <div class="sheet-box wide">
+    <h2 id="returnTitle">Return Items</h2>
+    <p class="muted" id="returnWho"></p>
+    <div id="returnWindowWarn"></div>
+    <div class="table-wrap" style="margin-top:10px;"><table>
+      <thead><tr><th>Item</th><th>Sold</th><th>Returned</th><th>Coming back</th><th>Condition</th><th>Value</th></tr></thead>
+      <tbody id="returnBody"></tbody>
+    </table></div>
+    <div class="row cols-2" style="margin-top:12px;">
+      <div id="returnModeRow">
+        <label for="returnMode">Refund as</label>
+        <select id="returnMode" onchange="updateReturnTotal()">
+          <option value="ledger">Credit on account (taken off what he owes)</option>
+          <option value="cash">Cash handed back</option>
+        </select>
+      </div>
+      <div><label for="returnNote">Reason / note (optional)</label><input type="text" id="returnNote" placeholder="e.g. wrong edition"></div>
+    </div>
+    <div class="totals" style="margin-top:12px;">
+      <div class="grand">Refund value: <span id="returnTotal">Rs.0.00</span></div>
+      <div class="muted" id="returnGrossNote"></div>
+    </div>
+    <div class="sheet-note" id="returnEffect"></div>
+    <div class="sheet-actions">
+      <button class="btn secondary" type="button" onclick="closeReturnModal()">Cancel</button>
+      <button class="btn" type="button" onclick="saveReturn()">Record Return</button>
+    </div>
+  </div>
+</div>
+
 <!-- Erase Data Modal -->
 <div id="wipe-modal" role="dialog" aria-modal="true" aria-labelledby="wipe-title">
   <div class="wipe-box">
@@ -1253,7 +1437,7 @@ let currentUser = null;
    a connection is available, so the till keeps selling with no internet at all.
    ========================================================================== */
 
-const TABLES = ['books','sales','suppliers','purchases','customers'];
+const TABLES = ['books','sales','suppliers','purchases','customers','payments','returns'];
 
 function attrStr(v){ return String(v).replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
 
@@ -1304,7 +1488,8 @@ const outboxClear = ()  => idbRun('outbox','readwrite',os=>os.clear());
 /* ---------- local snapshot ---------- */
 const DEFAULT_SETTINGS = {
   storeName:'My Bookstore', phone:'', address:'',
-  footer:'Thank you for your purchase!', currency:'Rs.', receiptSize:'thermal', logo:''
+  footer:'Thank you for your purchase!', currency:'Rs.', receiptSize:'thermal', logo:'',
+  creditDays:14, reminderDays:3, returnDays:30
 };
 
 async function persistLocal(){
@@ -1318,6 +1503,7 @@ async function loadLocal(){
     db = {
       books: saved.books || [], sales: saved.sales || [], suppliers: saved.suppliers || [],
       purchases: saved.purchases || [], customers: saved.customers || [],
+      payments: saved.payments || [], returns: saved.returns || [],
       settings: Object.assign({}, DEFAULT_SETTINGS, saved.settings || {})
     };
     currentReceiptSize = db.settings.receiptSize;
@@ -1337,24 +1523,44 @@ const bookRow = b => ({
 const supplierRow = s => ({
   id:s.id, user_id:currentUser.id, name:s.name, contact:s.contact||'', phone:s.phone||'', notes:s.notes||''
 });
-const customerRow = c => ({
-  id:c.id, user_id:currentUser.id, name:c.name, phone:c.phone||'', email:c.email||''
+const customerRow = c => {
+  const row = { id:c.id, user_id:currentUser.id, name:c.name, phone:c.phone||'', email:c.email||'' };
+  if(creditSchemaOk) row.credit_days = c.creditDays!=null ? c.creditDays : null;
+  return row;
+};
+const paymentRow = p => ({
+  id:p.id, user_id:currentUser.id, customer_id:p.customerId, sale_id:p.saleId||null,
+  amount:p.amount, paid_on:p.date, method:p.method||'', note:p.note||''
+});
+const returnRow = r => ({
+  id:r.id, user_id:currentUser.id, sale_id:r.saleId, customer_id:r.customerId||null,
+  return_date:r.date, items:r.items, amount:r.amount, refund_mode:r.refundMode||'ledger', note:r.note||''
 });
 const purchaseRow = p => ({
   id:p.id, user_id:currentUser.id, supplier_id:p.supplierId||null, book_id:p.bookId||null,
   book_title:p.bookTitle||'', qty:p.qty, cost_each:p.costEach, purchase_date:p.date, notes:p.notes||''
 });
-const saleRowFor = s => ({
+const saleRowFor = s => Object.assign(creditSchemaOk ? { due_date:s.dueDate || null } : {}, {
   id:s.id, user_id:currentUser.id, receipt_no:String(s.receiptNo), sale_date:s.date,
   customer:s.customer, phone:s.phone||'', customer_id:s.customerId||null, items:s.items,
   subtotal:s.subtotal, disc_type:s.discType, disc_input:s.discInput, disc_pct:s.discPct,
   disc_amt:s.discAmt, tax_pct:s.taxPct, tax_amt:s.taxAmt, total:s.total, payment:s.payment
 });
-const settingsRow = () => ({
-  user_id:currentUser.id, store_name:db.settings.storeName, phone:db.settings.phone,
-  address:db.settings.address, footer:db.settings.footer, currency:db.settings.currency,
-  receipt_size:db.settings.receiptSize, logo:db.settings.logo
-});
+const settingsRow = () => {
+  const row = {
+    user_id:currentUser.id, store_name:db.settings.storeName, phone:db.settings.phone,
+    address:db.settings.address, footer:db.settings.footer, currency:db.settings.currency,
+    receipt_size:db.settings.receiptSize, logo:db.settings.logo
+  };
+  /* Only send the credit columns to a database that actually has them —
+     otherwise every settings save would be refused on an un-migrated project. */
+  if(creditSchemaOk){
+    row.default_credit_days = db.settings.creditDays;
+    row.reminder_lead_days  = db.settings.reminderDays;
+    row.return_window_days  = db.settings.returnDays;
+  }
+  return row;
+};
 
 /* ---------- the outbox ----------
    type 'upsert'    -> insert or update that one row
@@ -1416,6 +1622,12 @@ async function pushOutbox(){
   return true;
 }
 
+/* False until we have seen the payments table answer. Until the credit
+   migration has been run those tables do not exist, and the app has to keep
+   selling normally rather than taking the whole sync down with it. */
+let creditSchemaOk = true;
+let creditSchemaWarned = false;
+
 async function pullAll(){
   await refreshSettings();
   await refreshBooks();
@@ -1423,6 +1635,19 @@ async function pullAll(){
   await refreshSuppliers();
   await refreshPurchases();
   await refreshCustomers();
+  try{
+    await refreshPayments();
+    await refreshReturns();
+    creditSchemaOk = true;
+  }catch(e){
+    if(looksOffline(e)) throw e;
+    creditSchemaOk = false;
+    console.warn('credit tables unavailable — run supabase-credit-migration.sql', e.message || e);
+    if(!creditSchemaWarned){
+      creditSchemaWarned = true;
+      toast('Dues and returns need one more database step — run supabase-credit-migration.sql');
+    }
+  }
 }
 
 async function syncNow(manual){
@@ -1481,6 +1706,7 @@ function renderAll(){
   renderPurchases();
   renderCustomers();
   renderSales();
+  renderDues();
   renderDashboard();
   loadSettingsForm();
   applyStoreHeader();
@@ -1497,6 +1723,8 @@ let db = {
   suppliers: [],
   purchases: [],
   customers: [],
+  payments: [],
+  returns: [],
   settings: {
     storeName: 'My Bookstore',
     phone: '',
@@ -1504,7 +1732,10 @@ let db = {
     footer: 'Thank you for your purchase!',
     currency: 'Rs.',
     receiptSize: 'thermal',
-    logo: ''
+    logo: '',
+    creditDays: 14,
+    reminderDays: 3,
+    returnDays: 30
   }
 };
 
@@ -1546,7 +1777,7 @@ async function doLogout(){
   try{ await sb.auth.signOut(); }catch(e){}
   await clearLocal();
   currentUser = null;
-  db = { books:[], sales:[], suppliers:[], purchases:[], customers:[], settings: Object.assign({}, DEFAULT_SETTINGS) };
+  db = { books:[], sales:[], suppliers:[], purchases:[], customers:[], payments:[], returns:[], settings: Object.assign({}, DEFAULT_SETTINGS) };
   document.getElementById('app-root').classList.remove('ready');
   document.getElementById('login-screen').classList.remove('hidden');
   document.getElementById('loginPassword').value = '';
@@ -1603,7 +1834,13 @@ async function refreshSettings(){
       footer: data.footer || 'Thank you for your purchase!',
       currency: data.currency || 'Rs.',
       receiptSize: data.receipt_size || 'thermal',
-      logo: data.logo || ''
+      logo: data.logo || '',
+      /* The three below arrived with the credit feature. A database that has
+         not had the migration run yet returns undefined for them, so they fall
+         back to the defaults instead of turning into NaN. */
+      creditDays:   data.default_credit_days != null ? Number(data.default_credit_days) : 14,
+      reminderDays: data.reminder_lead_days  != null ? Number(data.reminder_lead_days)  : 3,
+      returnDays:   data.return_window_days  != null ? Number(data.return_window_days)  : 30
     };
   }
 }
@@ -1626,7 +1863,8 @@ async function refreshSales(){
     customerId: s.customer_id,
     items: s.items, subtotal: Number(s.subtotal), discType: s.disc_type, discInput: Number(s.disc_input),
     discPct: Number(s.disc_pct), discAmt: Number(s.disc_amt), taxPct: Number(s.tax_pct),
-    taxAmt: Number(s.tax_amt), total: Number(s.total), payment: s.payment
+    taxAmt: Number(s.tax_amt), total: Number(s.total), payment: s.payment,
+    dueDate: s.due_date || null
   }));
 }
 
@@ -1648,7 +1886,28 @@ async function refreshPurchases(){
 async function refreshCustomers(){
   const { data, error } = await sb.from('customers').select('*').order('name');
   if(error) throw error;
-  db.customers = (data||[]).map(c=>({ id:c.id, name:c.name, phone:c.phone, email:c.email }));
+  db.customers = (data||[]).map(c=>({
+    id:c.id, name:c.name, phone:c.phone, email:c.email,
+    creditDays: c.credit_days != null ? Number(c.credit_days) : null
+  }));
+}
+
+async function refreshPayments(){
+  const { data, error } = await sb.from('payments').select('*').order('paid_on', {ascending:false});
+  if(error) throw error;
+  db.payments = (data||[]).map(p=>({
+    id:p.id, customerId:p.customer_id, saleId:p.sale_id, amount:Number(p.amount)||0,
+    date:p.paid_on, method:p.method||'', note:p.note||''
+  }));
+}
+
+async function refreshReturns(){
+  const { data, error } = await sb.from('returns').select('*').order('return_date', {ascending:false});
+  if(error) throw error;
+  db.returns = (data||[]).map(r=>({
+    id:r.id, saleId:r.sale_id, customerId:r.customer_id, date:r.return_date,
+    items:r.items||[], amount:Number(r.amount)||0, refundMode:r.refund_mode||'ledger', note:r.note||''
+  }));
 }
 
 /* ---------- Init ---------- */
@@ -1659,7 +1918,16 @@ function init(){
   document.getElementById('discountValue').addEventListener('input', renderCart);
   document.getElementById('discountType').addEventListener('change', onDiscountTypeChange);
   document.getElementById('taxPct').addEventListener('input', renderCart);
-  ['setStoreName','setPhone','setAddress','setFooter','setCurrency','setReceiptSize'].forEach(id=>{
+  /* Anything that changes who the bill is for, or how much has been handed
+     over, repaints the previous-balance block underneath the totals. */
+  ['custName','custPhone','amtReceived'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el){ el.addEventListener('input', renderCart); el.addEventListener('change', renderCart); }
+  });
+  document.getElementById('payAmount')?.addEventListener('input', updatePayPreview);
+  document.getElementById('duesSearch')?.addEventListener('input', renderDues);
+  ['setStoreName','setPhone','setAddress','setFooter','setCurrency','setReceiptSize',
+   'setCreditDays','setReminderDays','setReturnDays'].forEach(id=>{
     const el = document.getElementById(id);
     if(el){
       el.addEventListener('input',  ()=>{ settingsDirty = true; });
@@ -1678,6 +1946,7 @@ function init(){
   renderPurchases();
   renderCustomers();
   renderSales();
+  renderDues();
   populateBillingBookList();
 }
 
@@ -2129,15 +2398,23 @@ function renderCustomers(){
   const rows = db.customers.filter(c=>!q || c.name.toLowerCase().includes(q) || (c.phone||'').includes(q)).map(c=>{
     const orders = db.sales.filter(s=>s.customerId===c.id);
     const totalSpent = orders.reduce((s,o)=>s+o.total,0);
+    const bal = customerBalance(c.id);
+    const balCell = isZero(bal) ? '<span class="muted">—</span>'
+                  : bal > 0 ? '<strong class="low">' + money(bal) + '</strong>'
+                            : '<span class="pill ok">' + money(-bal) + ' credit</span>';
     return `<tr data-cust-row="${c.id}">
       <td>${escapeHtml(c.name)}</td>
       <td>${escapeHtml(c.phone||'-')}</td>
       <td>${money(totalSpent)}</td>
       <td>${orders.length}</td>
-      <td><a class="link-btn" onclick="viewCustomerHistory('${attrStr(c.id)}')">View Purchases</a></td>
+      <td>${balCell}</td>
+      <td class="nowrap">
+        <a class="link-btn" onclick="viewCustomerHistory('${attrStr(c.id)}')">View Purchases</a>
+        ${bal > 0.005 ? `<button class="small btn" onclick="openPayModal('${attrStr(c.id)}')">Receive Payment</button>` : ''}
+      </td>
     </tr>`;
   });
-  tbody.innerHTML = rows.join('') || '<tr><td colspan="5" class="muted">No customers yet — they\'re added automatically when you complete a sale with a name.</td></tr>';
+  tbody.innerHTML = rows.join('') || '<tr><td colspan="6" class="muted">No customers yet — they\'re added automatically when you complete a sale with a name.</td></tr>';
   populateBillingBookList();
 }
 
@@ -2166,7 +2443,7 @@ function viewCustomerHistory(customerId){
   const tr = document.createElement('tr');
   tr.className = 'expand-row';
   tr.id = panelId;
-  tr.innerHTML = `<td colspan="5">
+  tr.innerHTML = `<td colspan="6">
     <div class="muted" style="margin-bottom:8px;">${escapeHtml(c.name)} — ${orders.length} purchases · ${money(orders.reduce((t,o)=>t+o.total,0))} total</div>
     <div class="table-wrap"><table>
       <thead><tr><th>Receipt #</th><th>Date</th><th>Items</th><th>Total</th><th></th></tr></thead>
@@ -2285,6 +2562,8 @@ function clearCart(){
   document.getElementById('discountType').value='percent';
   document.getElementById('discountValue').value='';
   document.getElementById('taxPct').value='';
+  document.getElementById('amtReceived').value='';
+  document.getElementById('dueDate').value='';
   applyDiscountMode();
   renderCart();
 }
@@ -2331,6 +2610,81 @@ function renderCart(){
   document.getElementById('sumDiscount').textContent = '-' + money(discAmt);
   document.getElementById('sumTax').textContent = '+' + money(taxAmt);
   document.getElementById('sumTotal').textContent = money(total);
+  renderBillCredit(total);
+}
+
+/* ---------- the credit half of the billing screen ---------- */
+
+/* Mirrors exactly how completeSale() finds the customer, so the balance shown
+   on screen belongs to the same person the sale will be filed under. */
+function billingCustomer(){
+  const name  = (document.getElementById('custName')?.value || '').trim();
+  const phone = (document.getElementById('custPhone')?.value || '').trim();
+  if(!name) return null;
+  return (phone ? db.customers.find(c => c.phone && c.phone === phone)
+                : db.customers.find(c => c.name.toLowerCase() === name.toLowerCase())) || null;
+}
+
+function fillReceivedFull(){
+  const total = cart.reduce((s,c) => s + c.price*c.qty, 0);
+  const disc = getDiscount(total);
+  const taxPct = parseFloat(document.getElementById('taxPct').value) || 0;
+  const bill = round2(total - disc.amt + (total - disc.amt)*taxPct/100);
+  const cust = billingCustomer();
+  const prev = cust ? customerBalance(cust.id) : 0;
+  setNum('amtReceived', Math.max(0, round2(bill + prev)));
+  renderCart();
+}
+
+function renderBillCredit(total){
+  const box = document.getElementById('creditLines');
+  if(!box) return;
+  if(!creditSchemaOk){
+    /* The database has not had the credit migration run. Rather than quietly
+       accept a part payment that could never be stored, say so plainly. */
+    box.innerHTML = '<div class="prev-due">Credit sales are switched off until supabase-credit-migration.sql has been run.</div>';
+    const r = document.getElementById('amtReceived'); if(r){ r.value = ''; r.disabled = true; }
+    const d = document.getElementById('dueDate');     if(d){ d.value = ''; d.disabled = true; }
+    const b = document.getElementById('payAllBtn');   if(b){ b.disabled = true; }
+    return;
+  }
+  ['amtReceived','dueDate','payAllBtn'].forEach(id=>{ const e = document.getElementById(id); if(e) e.disabled = false; });
+  const cust = billingCustomer();
+  const prev = cust ? customerBalance(cust.id) : 0;   // + owes you, − you owe him
+  const payable = round2(total + prev);
+  const received = isBlank('amtReceived') ? Math.max(0, payable) : round2(numVal('amtReceived', 0));
+  const remaining = round2(payable - received);
+
+  const dueEl = document.getElementById('dueDate');
+  const hint = document.getElementById('dueHint');
+  /* The due date only matters when something is left unpaid, and it is filled
+     in for you from the customer's term (or the store default) unless you have
+     typed one yourself. */
+  if(dueEl){
+    dueEl.disabled = remaining <= 0.005;
+    if(remaining > 0.005 && !dueEl.value) dueEl.value = defaultDueDate(cust);
+    hint.textContent = remaining > 0.005
+      ? creditDaysFor(cust) + ' days from today' + (cust && cust.creditDays != null ? ' (' + cust.name + '’s own term)' : ' (store default)')
+      : 'Nothing left owing on this bill.';
+  }
+
+  const lines = [];
+  if(prev > 0.005)  lines.push('<div class="prev-due">Previous balance: <span>' + money(prev) + '</span></div>');
+  if(prev < -0.005) lines.push('<div class="prev-credit">Credit on account: <span>-' + money(-prev) + '</span></div>');
+  if(Math.abs(prev) > 0.005) lines.push('<div class="grand">Total payable: <span>' + money(Math.max(0, payable)) + '</span></div>');
+  if(!isBlank('amtReceived')) lines.push('<div>Received: <span>' + money(received) + '</span></div>');
+  if(remaining > 0.005) lines.push('<div class="prev-due">Remaining: <span>' + money(remaining) + '</span></div>');
+  else if(remaining < -0.005) lines.push('<div class="prev-credit">Change / credit: <span>' + money(-remaining) + '</span></div>');
+  box.innerHTML = lines.join('');
+
+  const rh = document.getElementById('receivedHint');
+  if(rh){
+    rh.textContent = !cust && remaining > 0.005
+      ? 'Enter a customer name — an unpaid bill has to belong to somebody.'
+      : prev > 0.005
+        ? 'Includes ' + money(prev) + ' of earlier dues. Leave blank to take the lot.'
+        : 'Leave blank if he is paying the bill in full.';
+  }
 }
 
 async function completeSale(){
@@ -2352,6 +2706,21 @@ async function completeSale(){
 
   const custNameInput = document.getElementById('custName').value.trim();
   const custPhoneInput = document.getElementById('custPhone').value.trim();
+
+  /* ---- credit side of the bill ---- */
+  const existingCust = billingCustomer();
+  const prevBalance  = existingCust ? customerBalance(existingCust.id) : 0;
+  const payable      = round2(total + prevBalance);
+  const received     = isBlank('amtReceived') ? Math.max(0, payable) : round2(numVal('amtReceived', 0));
+  const remaining    = round2(payable - received);
+
+  if(remaining > 0.005 && !custNameInput){
+    toast('Enter a customer name — an unpaid bill has to belong to somebody');
+    document.getElementById('custName').focus();
+    return;
+  }
+  if(received < 0){ toast('Amount received cannot be negative'); return; }
+
   let customerId = null;
   if(custNameInput){
     let existing = custPhoneInput ? db.customers.find(c=>c.phone && c.phone===custPhoneInput)
@@ -2376,11 +2745,29 @@ async function completeSale(){
     items: cart.map(c=>({bookId:c.bookId, code:c.code||'', title:c.title, price:c.price, cost:c.cost||0, qty:c.qty})),
     subtotal, discType, discInput, discPct, discAmt,
     taxPct, taxAmt, total,
-    payment: document.getElementById('paymentMethod').value
+    payment: document.getElementById('paymentMethod').value,
+    /* A due date is stamped whenever the bill itself was not settled in cash at
+       the till. That is also what pulls the sale into the receivables ledger. */
+    dueDate: (creditSchemaOk && customerId && received < round2(total) - 0.005)
+               ? (document.getElementById('dueDate').value || defaultDueDate(existingCust))
+               : null
   };
 
   db.sales.unshift(sale);
   await mutate('sales','upsert', saleRowFor(sale));
+
+  /* Money actually taken. Anything over what was payable is change handed
+     back across the counter, so it is not recorded as a payment. */
+  const applied = round2(Math.min(received, Math.max(0, payable)));
+  if(creditSchemaOk && customerId && applied > 0.005){
+    const pay = {
+      id: uid(), customerId, saleId: sale.id, amount: applied, date: sale.date,
+      method: sale.payment,
+      note: 'Received with bill #' + sale.receiptNo
+    };
+    db.payments.unshift(pay);
+    await mutate('payments','upsert', paymentRow(pay));
+  }
 
   // stock comes off the local copy, then goes into the outbox with everything else
   for(const c of cart){
@@ -2400,6 +2787,11 @@ async function completeSale(){
   renderInventory();
   renderSales();
   renderCustomers();
+  renderDues();
+  if(remaining > 0.005){
+    const due = sale.dueDate || document.getElementById('dueDate').value;
+    setTimeout(()=>toast(money(remaining) + ' left on account' + (due ? ' — due ' + fmtDate(due) : '')), 900);
+  }
   showReceipt(sale);
   clearCart();
 }
@@ -2416,6 +2808,24 @@ function nextReceiptNo(){
 }
 
 /* ---------- Receipt ---------- */
+
+/* What to print under the total when a bill is on credit. Worked out fresh
+   every time the receipt is drawn, so a reprint shows where the account
+   actually stands today rather than a figure frozen at the till. */
+function receiptCredit(sale){
+  if(!sale.customerId) return null;
+  const L = customerLedger(sale.customerId);
+  const bill = L.bills.find(b => b.sale.id === sale.id);
+  if(!bill) return null;
+  const received = round2(db.payments.filter(p => p.saleId === sale.id).reduce((t,p) => t + p.amount, 0));
+  const returned = round2(db.returns.filter(r => r.saleId === sale.id && r.refundMode === 'ledger')
+                                    .reduce((t,r) => t + r.amount, 0));
+  const accountTotal = round2(L.outstanding - L.credit);
+  const earlier = round2(accountTotal - bill.outstanding);
+  if(isZero(received) && isZero(returned) && isZero(accountTotal) && isZero(bill.outstanding)) return null;
+  return { received, returned, billOutstanding: bill.outstanding, earlier, accountTotal, dueDate: sale.dueDate };
+}
+
 function receiptMetaDate(d){
   const dt = new Date(d);
   return dt.toLocaleDateString() + ' ' + dt.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
@@ -2449,11 +2859,19 @@ function buildReceiptA4HTML(sale){
 
   const sumRow = (label, value, cls='') =>
     `<tr class="${cls}"><td class="spacer" colspan="3"></td><td>${label}</td><td class="num">${value}</td></tr>`;
+  const cr = receiptCredit(sale);
   const sumRows = [
     sumRow('Subtotal', money(sale.subtotal)),
     sale.discAmt>0 ? sumRow('Discount '+(sale.discType==='fixed'?'(flat)':'('+(+sale.discPct).toFixed(sale.discPct%1?1:0)+'%)'), '-'+money(sale.discAmt)) : '',
     sale.taxPct ? sumRow('Tax ('+sale.taxPct+'%)', '+'+money(sale.taxAmt)) : '',
-    sumRow('Total', money(sale.total), 'grand')
+    sumRow('Total', money(sale.total), 'grand'),
+    cr ? sumRow('Received', '-'+money(cr.received)) : '',
+    cr && cr.returned ? sumRow('Returned goods', '-'+money(cr.returned)) : '',
+    cr ? sumRow('Balance on this bill', money(cr.billOutstanding)) : '',
+    cr && !isZero(cr.earlier) ? sumRow(cr.earlier > 0 ? 'Other unpaid bills' : 'Credit on account',
+                                       (cr.earlier > 0 ? '' : '-') + money(Math.abs(cr.earlier))) : '',
+    cr && !isZero(cr.earlier) ? sumRow(cr.accountTotal >= 0 ? 'TOTAL DUE' : 'CREDIT IN HAND',
+                                       money(Math.abs(cr.accountTotal)), 'grand') : ''
   ].join('');
 
   return `
@@ -2478,6 +2896,7 @@ function buildReceiptA4HTML(sale){
         <tr><th>Receipt #</th><td>${escapeHtml(String(sale.receiptNo))}</td></tr>
         <tr><th>Receipt Date</th><td>${receiptMetaDate(sale.date)}</td></tr>
         <tr><th>Payment</th><td>${escapeHtml(sale.payment||'')}</td></tr>
+        ${sale.dueDate ? `<tr><th>Payment Due By</th><td>${fmtDate(sale.dueDate)}</td></tr>` : ''}
       </table>
     </div>
 
@@ -2524,6 +2943,15 @@ function buildReceiptHTML(sale){
     <div class="r-line"></div>
     <div class="r-row" style="font-weight:bold; font-size:16px;"><span>TOTAL</span><span>${money(sale.total)}</span></div>
     <div class="r-row"><span>Payment</span><span>${escapeHtml(sale.payment)}</span></div>
+    ${(()=>{ const cr = receiptCredit(sale); if(!cr) return '';
+      return `<div class="r-line"></div>
+        <div class="r-row"><span>Received</span><span>${money(cr.received)}</span></div>
+        ${cr.returned?`<div class="r-row"><span>Returned goods</span><span>-${money(cr.returned)}</span></div>`:''}
+        <div class="r-row"><span>Balance this bill</span><span>${money(cr.billOutstanding)}</span></div>
+        ${!isZero(cr.earlier)?`<div class="r-row"><span>${cr.earlier>0?'Other unpaid bills':'Credit on account'}</span><span>${cr.earlier>0?'':'-'}${money(Math.abs(cr.earlier))}</span></div>
+        <div class="r-row" style="font-weight:bold;"><span>${cr.accountTotal>=0?'TOTAL DUE':'CREDIT IN HAND'}</span><span>${money(Math.abs(cr.accountTotal))}</span></div>`:''}
+        ${sale.dueDate?`<div class="r-row"><span>Due by</span><span>${fmtDate(sale.dueDate)}</span></div>`:''}`;
+    })()}
     <div class="r-line"></div>
     <div class="r-center">${escapeHtml(s.footer).replace(/\n/g,'<br>')}</div>
   `;
@@ -2603,23 +3031,521 @@ function renderSales(){
   tbody.innerHTML='';
   const filtered = getFilteredSales();
   const sorted = [...filtered].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const idx = ledgerIndex();
   sorted.forEach(s=>{
+    const entry = idx.get(s.id);
+    const st = entry ? entry.status : { label:'Paid', cls:'ok' };
+    const outstanding = entry ? entry.outstanding : 0;
+    const returned = db.returns.filter(r=>r.saleId===s.id).reduce((t,r)=>t+r.amount,0);
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>#${s.receiptNo}</td>
       <td>${new Date(s.date).toLocaleDateString()} ${new Date(s.date).toLocaleTimeString()}</td>
       <td>${escapeHtml(s.customer)}</td>
-      <td>${s.items.reduce((n,i)=>n+i.qty,0)} items</td>
+      <td>${s.items.reduce((n,i)=>n+i.qty,0)} items${returned?' <span class="muted">· '+money(returned)+' returned</span>':''}</td>
       <td>${money(s.total)}</td>
-      <td><button class="small btn secondary" onclick="reprintSale('${attrStr(s.receiptNo)}')">Reprint</button></td>
+      <td><span class="pill ${st.cls}">${escapeHtml(st.label)}</span>${outstanding>0.005?'<div class="muted">'+money(outstanding)+' open</div>':''}</td>
+      <td class="nowrap">
+        <button class="small btn secondary" onclick="reprintSale('${attrStr(s.receiptNo)}')">Reprint</button>
+        <button class="small btn secondary" onclick="openReturnModal('${attrStr(s.id)}')">Return</button>
+        ${s.customerId?`<button class="small btn" onclick="openPayModal('${attrStr(s.customerId)}')">Payment</button>`:''}
+      </td>
     `;
     tbody.appendChild(tr);
   });
   const totalRevenue = filtered.reduce((s,x)=>s+x.total,0);
-  document.getElementById('salesSummary').textContent = `${filtered.length} sales • ${money(totalRevenue)} revenue (in current filter)`;
+  const ids = new Set(filtered.map(s=>s.id));
+  const returnedHere = round2(db.returns.filter(r=>ids.has(r.saleId)).reduce((t,r)=>t+r.amount,0));
+  document.getElementById('salesSummary').textContent =
+    `${filtered.length} sales • ${money(totalRevenue)} billed`
+    + (returnedHere ? ` • ${money(returnedHere)} returned • ${money(round2(totalRevenue - returnedHere))} net` : '')
+    + ' (in current filter)';
   renderDashboard();
 }
 
+
+/* ==========================================================================
+   CREDIT, DUES AND RETURNS
+   --------------------------------------------------------------------------
+   Nothing here stores "how much has been paid" as a number that gets edited.
+   Every event is its own row — a bill, a payment, a return — and what a
+   customer owes is worked out by adding them up. Two rows can never disagree
+   about a running total, which is what makes this safe when the till has been
+   offline and replays a queue of changes later.
+
+   Payments and returns always settle the OLDEST unpaid bill first.
+   ========================================================================== */
+
+const DAY_MS = 86400000;
+
+function round2(n){ return Math.round((Number(n)||0) * 100) / 100; }
+function isZero(n){ return Math.abs(Number(n)||0) < 0.005; }
+
+function today0(){ const d = new Date(); d.setHours(0,0,0,0); return d; }
+function dateOnly(v){ if(!v) return null; const d = new Date(v); if(isNaN(d)) return null; d.setHours(0,0,0,0); return d; }
+function isoDate(d){ const p = n => String(n).padStart(2,'0'); return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()); }
+function addDays(d, n){ const x = new Date(d.getTime()); x.setDate(x.getDate()+n); return x; }
+function fmtDate(v){ const d = dateOnly(v); return d ? d.toLocaleDateString(undefined,{day:'2-digit',month:'short',year:'numeric'}) : '—'; }
+function daysUntil(v){ const d = dateOnly(v); return d ? Math.round((d - today0())/DAY_MS) : null; }
+
+/* How long this customer gets by default. His own term wins over the store's. */
+function creditDaysFor(customer){
+  const own = customer && customer.creditDays;
+  const n = (own != null && own !== '') ? Number(own) : Number(db.settings.creditDays);
+  return isFinite(n) && n >= 0 ? n : 14;
+}
+function defaultDueDate(customer){ return isoDate(addDays(today0(), creditDaysFor(customer))); }
+
+/* A sale joins the receivables ledger only if it was rung up to a named
+   customer AND something has been recorded against it — a due date, a payment
+   or a return. Sales made before this feature existed have none of those, so
+   they stay exactly as they were instead of suddenly reading as unpaid. */
+function isLedgerSale(s){
+  if(!s.customerId) return false;
+  if(s.dueDate) return true;
+  if(db.payments.some(p => p.saleId === s.id)) return true;
+  if(db.returns.some(r => r.saleId === s.id)) return true;
+  return false;
+}
+
+/* The whole position for one customer: every bill with what is still open on
+   it, plus any credit left over after the oldest bills have been settled. */
+function customerLedger(customerId){
+  const bills = db.sales
+    .filter(s => s.customerId === customerId && isLedgerSale(s))
+    .sort((a,b) => new Date(a.date) - new Date(b.date))
+    .map(s => ({ sale:s, gross: s.total, outstanding: s.total }));
+
+  const received = round2(db.payments.filter(p => p.customerId === customerId)
+                                     .reduce((t,p) => t + p.amount, 0));
+  const returned = round2(db.returns.filter(r => r.customerId === customerId && r.refundMode === 'ledger')
+                                    .reduce((t,r) => t + r.amount, 0));
+
+  let credit = round2(received + returned);
+  for(const b of bills){
+    const use = Math.min(credit, b.outstanding);
+    b.outstanding = round2(b.outstanding - use);
+    credit = round2(credit - use);
+  }
+
+  const outstanding = round2(bills.reduce((t,b) => t + b.outstanding, 0));
+  return {
+    bills, received, returned, credit,
+    outstanding,
+    billed: round2(bills.reduce((t,b) => t + b.gross, 0)),
+    open: bills.filter(b => !isZero(b.outstanding))
+  };
+}
+
+/* What a customer owes right now. Negative means the store owes him. */
+function customerBalance(customerId){
+  const L = customerLedger(customerId);
+  return round2(L.outstanding - L.credit);
+}
+
+function dueStatus(bill){
+  if(isZero(bill.outstanding)) return { key:'paid', label:'Paid', cls:'ok' };
+  const due = bill.sale.dueDate;
+  if(!due) return { key:'open', label:'Unpaid', cls:'warn', days:null };
+  const d = daysUntil(due);
+  if(d < 0)  return { key:'overdue', label: (-d) + ' day' + (d === -1 ? '' : 's') + ' overdue', cls:'bad', days:d };
+  if(d === 0) return { key:'today', label:'Due today', cls:'bad', days:d };
+  if(d <= Number(db.settings.reminderDays || 0)) return { key:'soon', label:'Due in ' + d + ' day' + (d === 1 ? '' : 's'), cls:'warn', days:d };
+  return { key:'open', label:'Due ' + fmtDate(due), cls:'', days:d };
+}
+
+/* Every customer with something outstanding or something on credit, plus a
+   flat list of the individual bills that need chasing. Recomputed on every
+   render and entirely from local data, so it works with no connection. */
+function receivables(){
+  const customers = [], alerts = [];
+  let totalOutstanding = 0, overdue = 0, dueSoon = 0, creditHeld = 0;
+
+  db.customers.forEach(c => {
+    const L = customerLedger(c.id);
+    if(isZero(L.outstanding) && isZero(L.credit) && !L.bills.length) return;
+    totalOutstanding = round2(totalOutstanding + L.outstanding);
+    creditHeld = round2(creditHeld + L.credit);
+    L.open.forEach(b => {
+      const st = dueStatus(b);
+      if(st.key === 'overdue' || st.key === 'today'){ overdue = round2(overdue + b.outstanding); alerts.push({ customer:c, bill:b, status:st }); }
+      else if(st.key === 'soon'){ dueSoon = round2(dueSoon + b.outstanding); alerts.push({ customer:c, bill:b, status:st }); }
+    });
+    if(!isZero(L.outstanding) || !isZero(L.credit)) customers.push({ customer:c, ledger:L });
+  });
+
+  alerts.sort((a,b) => (a.status.days == null ? 1 : a.status.days) - (b.status.days == null ? 1 : b.status.days));
+  customers.sort((a,b) => b.ledger.outstanding - a.ledger.outstanding);
+  return { customers, alerts, totalOutstanding, overdue, dueSoon, creditHeld };
+}
+
+/* Every ledger bill keyed by sale id, worked out once per render rather than
+   per row — each lookup otherwise walks that customer's whole history. */
+function ledgerIndex(){
+  const map = new Map();
+  const seen = new Set();
+  db.sales.forEach(s => {
+    if(!s.customerId || seen.has(s.customerId)) return;
+    seen.add(s.customerId);
+    customerLedger(s.customerId).bills.forEach(b =>
+      map.set(b.sale.id, { outstanding: b.outstanding, status: dueStatus(b) }));
+  });
+  return map;
+}
+
+/* How much of the returned goods on a sale has already come back, per line. */
+function returnedQtyMap(saleId){
+  const map = {};
+  db.returns.filter(r => r.saleId === saleId).forEach(r => {
+    (r.items||[]).forEach(it => { map[it.idx] = (map[it.idx]||0) + (Number(it.qty)||0); });
+  });
+  return map;
+}
+
+/* ---------- Dues tab ---------- */
+function renderDues(){
+  const statsEl = document.getElementById('duesStats');
+  if(!statsEl) return;
+  const R = receivables();
+
+  statsEl.innerHTML = [
+    { label:'Outstanding', value: money(R.totalOutstanding), sub: R.customers.filter(x=>!isZero(x.ledger.outstanding)).length + ' customer(s)', icon:'wallet', cls: R.totalOutstanding > 0 ? 'warn' : 'good' },
+    { label:'Overdue', value: money(R.overdue), sub:'past the promised date', icon:'alert', cls: R.overdue > 0 ? 'warn' : 'good' },
+    { label:'Due soon', value: money(R.dueSoon), sub:'within ' + db.settings.reminderDays + ' day(s)', icon:'calendar', cls:'cyan' },
+    { label:'Credit held', value: money(R.creditHeld), sub:'paid ahead or returned', icon:'coins' }
+  ].map(statCardHTML).join('');
+
+  const banner = document.getElementById('duesBanner');
+  if(banner){
+    const late = R.alerts.filter(a => a.status.key === 'overdue' || a.status.key === 'today');
+    banner.innerHTML = late.length
+      ? `<div class="banner">🔔 <strong>${late.length} bill${late.length>1?'s':''}</strong> need collecting: ${
+          late.slice(0,5).map(a => escapeHtml(a.customer.name) + ' — ' + money(a.bill.outstanding) + ' (#' + escapeHtml(String(a.bill.sale.receiptNo)) + ', ' + a.status.label + ')').join(' · ')
+        }${late.length>5 ? '…' : ''}</div>`
+      : '';
+  }
+
+  const alertBody = document.getElementById('duesAlertBody');
+  alertBody.innerHTML = R.alerts.map(a => `<tr>
+    <td>#${escapeHtml(String(a.bill.sale.receiptNo))}</td>
+    <td>${escapeHtml(a.customer.name)}${a.customer.phone ? ' <span class="muted">· ' + escapeHtml(a.customer.phone) + '</span>' : ''}</td>
+    <td>${fmtDate(a.bill.sale.date)}</td>
+    <td>${fmtDate(a.bill.sale.dueDate)}</td>
+    <td>${money(a.bill.outstanding)}</td>
+    <td><span class="pill ${a.status.cls}">${escapeHtml(a.status.label)}</span></td>
+    <td class="nowrap">
+      <button class="small btn" onclick="openPayModal('${attrStr(a.customer.id)}')">Receive Payment</button>
+      <button class="small btn secondary" onclick="reprintSale('${attrStr(a.bill.sale.receiptNo)}')">Receipt</button>
+    </td>
+  </tr>`).join('');
+  document.getElementById('duesAlertEmpty').style.display = R.alerts.length ? 'none' : 'block';
+  document.getElementById('duesAlertCount').textContent = R.alerts.length
+    ? R.alerts.length + ' bill' + (R.alerts.length === 1 ? '' : 's')
+    : '';
+
+  const q = (document.getElementById('duesSearch')?.value || '').toLowerCase();
+  const rows = R.customers.filter(x => !q || x.customer.name.toLowerCase().includes(q) || (x.customer.phone||'').includes(q));
+  document.getElementById('duesTableBody').innerHTML = rows.map(x => {
+    const L = x.ledger;
+    const bal = round2(L.outstanding - L.credit);
+    const balCell = isZero(bal) ? '<span class="pill ok">Settled</span>'
+                  : bal > 0 ? '<strong class="low">' + money(bal) + '</strong>'
+                            : '<span class="pill ok">' + money(-bal) + ' credit</span>';
+    return `<tr data-dues-row="${x.customer.id}">
+      <td>${escapeHtml(x.customer.name)}</td>
+      <td>${escapeHtml(x.customer.phone || '-')}</td>
+      <td>${L.bills.length}</td>
+      <td>${money(L.billed)}</td>
+      <td>${money(L.received)}</td>
+      <td>${balCell}</td>
+      <td class="nowrap">
+        <button class="small btn" onclick="openPayModal('${attrStr(x.customer.id)}')">Receive Payment</button>
+        <a class="link-btn" onclick="toggleDuesDetail('${attrStr(x.customer.id)}')">Statement</a>
+      </td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="7" class="muted">Nobody owes anything. 🎉</td></tr>';
+
+  const badge = document.getElementById('duesNavBadge');
+  if(badge){
+    const n = R.alerts.filter(a => a.status.key === 'overdue' || a.status.key === 'today').length;
+    badge.textContent = n ? String(n) : '';
+    badge.style.display = n ? 'inline-flex' : 'none';
+  }
+}
+
+/* A full statement for one customer — every bill, payment and return in date
+   order, so you can read out exactly how a balance was arrived at. */
+function toggleDuesDetail(customerId){
+  const c = db.customers.find(x => x.id === customerId);
+  if(!c) return;
+  const panelId = 'dues-exp-' + customerId;
+  const already = document.getElementById(panelId);
+  document.querySelectorAll('#duesTableBody tr.expand-row').forEach(r => r.remove());
+  if(already) return;
+
+  const anchor = document.querySelector('#duesTableBody tr[data-dues-row="' + customerId + '"]');
+  if(!anchor) return;
+
+  const L = customerLedger(customerId);
+  const events = [];
+  L.bills.forEach(b => events.push({ date:b.sale.date, what:'Bill #' + b.sale.receiptNo, detail: b.sale.items.reduce((n,i)=>n+i.qty,0) + ' item(s)' + (b.sale.dueDate ? ' · due ' + fmtDate(b.sale.dueDate) : ''), debit:b.gross, credit:0 }));
+  db.payments.filter(p => p.customerId === customerId).forEach(p => events.push({ date:p.date, what:'Payment', detail:(p.method||'') + (p.note ? ' · ' + p.note : ''), debit:0, credit:p.amount }));
+  db.returns.filter(r => r.customerId === customerId && r.refundMode === 'ledger').forEach(r => events.push({ date:r.date, what:'Return', detail:(r.items||[]).map(i => i.title + ' x' + i.qty).join(', '), debit:0, credit:r.amount }));
+  events.sort((a,b) => new Date(a.date) - new Date(b.date));
+
+  let run = 0;
+  const bal = round2(L.outstanding - L.credit);
+  const tr = document.createElement('tr');
+  tr.className = 'expand-row';
+  tr.id = panelId;
+  tr.innerHTML = `<td colspan="7">
+    <div class="muted" style="margin-bottom:8px;">${escapeHtml(c.name)} — statement. Payments and returns settle the oldest bill first.</div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Date</th><th>Entry</th><th>Details</th><th>Charged</th><th>Paid / returned</th><th>Balance</th></tr></thead>
+      <tbody>
+        ${events.map(e => { run = round2(run + e.debit - e.credit); return `<tr>
+          <td>${fmtDate(e.date)}</td>
+          <td>${escapeHtml(e.what)}</td>
+          <td class="muted">${escapeHtml(e.detail || '')}</td>
+          <td>${e.debit ? money(e.debit) : ''}</td>
+          <td>${e.credit ? money(e.credit) : ''}</td>
+          <td>${money(run)}</td>
+        </tr>`; }).join('')}
+      </tbody>
+      <tfoot><tr><th colspan="5" style="text-align:right;">${bal >= 0 ? 'Balance owing' : 'Credit on account'}</th><th>${money(Math.abs(bal))}</th></tr></tfoot>
+    </table></div>
+  </td>`;
+  anchor.insertAdjacentElement('afterend', tr);
+}
+
+/* ---------- Receive payment ---------- */
+let payCustomerId = null;
+
+function openPayModal(customerId){
+  const c = db.customers.find(x => x.id === customerId);
+  if(!c){ toast('Customer not found'); return; }
+  payCustomerId = customerId;
+  const L = customerLedger(customerId);
+  const bal = round2(L.outstanding - L.credit);
+
+  document.getElementById('payWho').innerHTML = escapeHtml(c.name)
+    + (c.phone ? ' · ' + escapeHtml(c.phone) : '')
+    + '<br>' + (bal > 0
+        ? 'Owes <strong>' + money(bal) + '</strong> across ' + L.open.length + ' bill' + (L.open.length === 1 ? '' : 's')
+        : bal < 0 ? 'Has <strong>' + money(-bal) + '</strong> credit on account'
+                  : 'Nothing outstanding');
+
+  document.getElementById('payAmount').value = bal > 0 ? bal.toFixed(2) : '';
+  document.getElementById('payAmount').placeholder = bal > 0 ? bal.toFixed(2) : '0.00';
+  document.getElementById('payDate').value = isoDate(today0());
+  document.getElementById('payMethod').value = 'Cash';
+  document.getElementById('payNote').value = '';
+  updatePayPreview();
+  document.getElementById('pay-modal').classList.add('show');
+  setTimeout(() => document.getElementById('payAmount').focus(), 60);
+}
+
+function closePayModal(){
+  document.getElementById('pay-modal').classList.remove('show');
+  payCustomerId = null;
+}
+
+function updatePayPreview(){
+  if(!payCustomerId) return;
+  const L = customerLedger(payCustomerId);
+  const bal = round2(L.outstanding - L.credit);
+  const amt = round2(numVal('payAmount', 0));
+  const after = round2(bal - amt);
+  const el = document.getElementById('payAfter');
+
+  let lines = '';
+  if(amt > 0){
+    let left = amt;
+    const applied = [];
+    for(const b of L.open){
+      if(left <= 0) break;
+      const use = Math.min(left, b.outstanding);
+      applied.push('#' + b.sale.receiptNo + ' ' + money(use));
+      left = round2(left - use);
+    }
+    if(applied.length) lines = 'Settles ' + applied.join(', ') + (left > 0 ? ' · ' + money(left) + ' left as credit' : '');
+    else lines = 'Held as ' + money(amt) + ' credit on account';
+  }
+  el.innerHTML = (lines ? escapeHtml(lines) + '<br>' : '')
+    + (after > 0 ? 'Still owing afterwards: <strong>' + money(after) + '</strong>'
+      : after < 0 ? 'Credit afterwards: <strong>' + money(-after) + '</strong>'
+      : '<strong>Fully settled.</strong>');
+}
+
+async function savePayment(){
+  if(!payCustomerId) return;
+  if(!creditSchemaOk){ toast('Run supabase-credit-migration.sql first — payments cannot be saved yet'); return; }
+  const amount = round2(numVal('payAmount', 0));
+  if(!(amount > 0)){ toast('Enter an amount'); return; }
+  const dateStr = document.getElementById('payDate').value;
+  const when = dateStr ? new Date(dateStr + 'T12:00:00').toISOString() : new Date().toISOString();
+
+  const pay = {
+    id: uid(), customerId: payCustomerId, saleId: null, amount,
+    date: when,
+    method: document.getElementById('payMethod').value,
+    note: document.getElementById('payNote').value.trim()
+  };
+  db.payments.unshift(pay);
+  await mutate('payments','upsert', paymentRow(pay));
+
+  const bal = customerBalance(payCustomerId);
+  closePayModal();
+  renderDues(); renderCustomers(); renderSales(); renderDashboard();
+  toast(bal > 0 ? 'Payment recorded — ' + money(bal) + ' still owing'
+      : bal < 0 ? 'Payment recorded — ' + money(-bal) + ' credit on account'
+                : 'Payment recorded — account settled');
+}
+
+/* ---------- Returns ---------- */
+let returnSale = null;
+
+function openReturnModal(saleId){
+  const sale = db.sales.find(s => s.id === saleId);
+  if(!sale){ toast('Sale not found'); return; }
+  returnSale = sale;
+
+  const already = returnedQtyMap(sale.id);
+  const cust = sale.customerId ? db.customers.find(c => c.id === sale.customerId) : null;
+
+  document.getElementById('returnWho').innerHTML =
+    'Bill <strong>#' + escapeHtml(String(sale.receiptNo)) + '</strong> · ' + fmtDate(sale.date)
+    + ' · ' + escapeHtml(sale.customer || 'Walk-in customer');
+
+  const age = Math.abs(daysUntil(sale.date) || 0);
+  const win = Number(db.settings.returnDays || 0);
+  const warn = document.getElementById('returnWindowWarn');
+  warn.innerHTML = (win > 0 && age > win)
+    ? '<div class="banner">This bill is ' + age + ' days old — past your ' + win + '-day return window. You can still accept it.</div>'
+    : '';
+
+  document.getElementById('returnBody').innerHTML = sale.items.map((it, idx) => {
+    const done = already[idx] || 0;
+    const left = Math.max(0, it.qty - done);
+    return `<tr>
+      <td>${escapeHtml(it.title)}</td>
+      <td>${it.qty}</td>
+      <td>${done || '—'}</td>
+      <td><input type="number" class="ret-qty" data-idx="${idx}" min="0" max="${left}" step="1" value="0" ${left ? '' : 'disabled'} oninput="updateReturnTotal()"></td>
+      <td><select class="ret-cond" data-idx="${idx}" ${left ? '' : 'disabled'} onchange="updateReturnTotal()">
+            <option value="good">Good (restock)</option>
+            <option value="damaged">Damaged (write off)</option>
+          </select></td>
+      <td class="ret-value" data-idx="${idx}">${money(0)}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('returnNote').value = '';
+  document.getElementById('returnMode').value = sale.customerId ? 'ledger' : 'cash';
+  document.getElementById('returnModeRow').style.display = sale.customerId ? '' : 'none';
+  updateReturnTotal();
+  document.getElementById('return-modal').classList.add('show');
+}
+
+function closeReturnModal(){
+  document.getElementById('return-modal').classList.remove('show');
+  returnSale = null;
+}
+
+function collectReturnLines(){
+  if(!returnSale) return [];
+  const lines = [];
+  document.querySelectorAll('#returnBody .ret-qty').forEach(inp => {
+    const idx = Number(inp.dataset.idx);
+    const qty = Math.max(0, Math.trunc(Number(inp.value) || 0));
+    if(!qty) return;
+    const it = returnSale.items[idx];
+    const cond = document.querySelector('#returnBody .ret-cond[data-idx="' + idx + '"]').value;
+    lines.push({ idx, bookId: it.bookId, title: it.title, price: it.price, qty, condition: cond,
+                 value: round2(it.price * qty) });
+  });
+  return lines;
+}
+
+function updateReturnTotal(){
+  if(!returnSale) return;
+  const lines = collectReturnLines();
+  document.querySelectorAll('#returnBody .ret-value').forEach(td => { td.textContent = money(0); });
+  lines.forEach(l => {
+    const td = document.querySelector('#returnBody .ret-value[data-idx="' + l.idx + '"]');
+    if(td) td.textContent = money(l.value);
+  });
+  const gross = round2(lines.reduce((t,l) => t + l.value, 0));
+  /* The bill's own discount comes off the refund too, otherwise a returned
+     book would hand back more than was ever paid for it. */
+  const share = returnSale.subtotal > 0 ? (returnSale.total / returnSale.subtotal) : 1;
+  const refund = round2(gross * share);
+  document.getElementById('returnTotal').textContent = money(refund);
+  document.getElementById('returnGrossNote').textContent = (share < 0.999 || share > 1.001)
+    ? 'List value ' + money(gross) + ', adjusted to what was actually charged on this bill.'
+    : '';
+
+  const el = document.getElementById('returnEffect');
+  const mode = document.getElementById('returnMode').value;
+  if(!refund){ el.textContent = 'Enter the quantities coming back.'; return; }
+  if(mode === 'cash'){
+    el.innerHTML = 'You hand back <strong>' + money(refund) + '</strong> in cash.';
+  } else {
+    const bal = customerBalance(returnSale.customerId);
+    const after = round2(bal - refund);
+    el.innerHTML = 'Comes off what he owes: <strong>' + money(bal) + '</strong> → <strong>'
+                 + (after >= 0 ? money(after) + '</strong> owing' : money(-after) + '</strong> credit on account');
+  }
+  const restocking = lines.filter(l => l.condition === 'good').reduce((t,l) => t + l.qty, 0);
+  const damaged = lines.filter(l => l.condition === 'damaged').reduce((t,l) => t + l.qty, 0);
+  el.innerHTML += '<br>' + restocking + ' copy(ies) back into stock'
+               + (damaged ? ', ' + damaged + ' written off as damaged' : '') + '.';
+}
+
+async function saveReturn(){
+  if(!returnSale) return;
+  if(!creditSchemaOk){ toast('Run supabase-credit-migration.sql first — returns cannot be saved yet'); return; }
+  const lines = collectReturnLines();
+  if(!lines.length){ toast('Enter the quantities coming back'); return; }
+
+  const gross = round2(lines.reduce((t,l) => t + l.value, 0));
+  const share = returnSale.subtotal > 0 ? (returnSale.total / returnSale.subtotal) : 1;
+  const refund = round2(gross * share);
+  const mode = returnSale.customerId ? document.getElementById('returnMode').value : 'cash';
+
+  const ok = await askConfirm({
+    kind:'neutral',
+    title:'Record this return?',
+    message: lines.map(l => l.qty + ' × ' + l.title).join(', ') + ' — ' + money(refund)
+             + (mode === 'cash' ? ', refunded in cash.' : ', taken off the customer’s account.'),
+    confirmText:'Record Return'
+  });
+  if(!ok) return;
+
+  const ret = {
+    id: uid(), saleId: returnSale.id, customerId: returnSale.customerId || null,
+    date: new Date().toISOString(),
+    items: lines.map(l => ({ idx:l.idx, bookId:l.bookId, title:l.title, price:l.price, qty:l.qty, condition:l.condition })),
+    amount: refund, refundMode: mode,
+    note: document.getElementById('returnNote').value.trim()
+  };
+  db.returns.unshift(ret);
+  await mutate('returns','upsert', returnRow(ret));
+
+  for(const l of lines){
+    if(l.condition !== 'good' || !l.bookId) continue;
+    const b = db.books.find(x => x.id === l.bookId);
+    if(b){ b.stock = b.stock + l.qty; await mutate('books','upsert', bookRow(b)); }
+  }
+
+  const saleId = returnSale.id;
+  closeReturnModal();
+  renderInventory(); renderSales(); renderCustomers(); renderDues(); renderDashboard();
+  const sale = db.sales.find(s => s.id === saleId);
+  toast(mode === 'cash' ? 'Return recorded — refund ' + money(refund) + ' in cash'
+                        : 'Return recorded — ' + money(refund) + ' off the account');
+  if(sale) showReceipt(sale);
+}
 
 /* Dashboard tiles — a line icon in a tinted square, AquaVista style. */
 const STAT_ICONS = {
@@ -2677,7 +3603,12 @@ function renderDashboard(){
       sellerCounts[it.title] = (sellerCounts[it.title]||0) + it.qty;
     });
   });
-  const grossProfit = totalRevenue - totalDiscount - totalCOGS; // revenue after discount, minus cost of goods (tax is pass-through)
+  /* Goods that came back were never really sold, so they come off revenue. */
+  const returnsTotal = round2(db.returns.reduce((t,r) => t + r.amount, 0));
+  const netRevenue = round2(totalRevenue - returnsTotal);
+  const R = receivables();
+
+  const grossProfit = netRevenue - totalDiscount - totalCOGS; // revenue after discount and returns, minus cost of goods (tax is pass-through)
   const isLoss = grossProfit < 0;
 
   const mainStats = [
@@ -2690,10 +3621,11 @@ function renderDashboard(){
 
   const salesStats = [
     {label:'Total Sales', value: sales.length, icon:'receipt'},
-    {label:'Total Revenue', value: money(totalRevenue), cls:'good', icon:'trend'},
+    {label:'Total Revenue', value: money(netRevenue), sub: returnsTotal ? 'after '+money(returnsTotal)+' returned' : '', cls:'good', icon:'trend'},
     {label: isLoss?'Net Loss':'Gross Profit', value: money(Math.abs(grossProfit)), cls: isLoss?'warn':'good', icon:'coins'},
     {label:"Today's Revenue", value: money(todayRevenue), sub:`${todayCount} sale${todayCount===1?'':'s'}`, icon:'sun', cls:'cyan'},
     {label:"This Month's Revenue", value: money(monthRevenue), sub:`${monthCount} sale${monthCount===1?'':'s'}`, icon:'calendar'},
+    {label:'Money Owed to You', value: money(R.totalOutstanding), sub: R.overdue ? money(R.overdue)+' overdue' : 'nothing overdue', cls: R.overdue?'warn':'good', icon:'wallet'},
     {label:'Low Stock Items', value: lowStock.length, cls: lowStock.length?'warn':'good', icon:'alert'},
   ];
   document.getElementById('statGridSales').innerHTML = salesStats.map(statCardHTML).join('');
@@ -2709,6 +3641,16 @@ function renderDashboard(){
   const topBody = document.getElementById('topSellersBody');
   topBody.innerHTML = topSellers.map(([title,qty])=>`<tr><td>${escapeHtml(title)}</td><td>${qty}</td></tr>`).join('');
   document.getElementById('topSellersEmpty').style.display = topSellers.length? 'none':'block';
+
+  const dueBanner = document.getElementById('duesDashBanner');
+  if(dueBanner){
+    const late = R.alerts.filter(a => a.status.key === 'overdue' || a.status.key === 'today');
+    dueBanner.innerHTML = late.length
+      ? `<div class="banner">🔔 <strong>${money(R.overdue)}</strong> to collect from ${new Set(late.map(a=>a.customer.id)).size} customer${new Set(late.map(a=>a.customer.id)).size>1?'s':''}: ${
+          late.slice(0,4).map(a => escapeHtml(a.customer.name) + ' ' + money(a.bill.outstanding) + ' (' + a.status.label + ')').join(' · ')
+        }${late.length>4?'…':''} &nbsp;<a class="link-btn" onclick="switchTab('dues')">Open Dues</a></div>`
+      : '';
+  }
 
   const banner = document.getElementById('reorderBanner');
   if(banner){
@@ -2735,6 +3677,9 @@ function loadSettingsFormNow(){
   document.getElementById('setFooter').value = db.settings.footer;
   document.getElementById('setCurrency').value = db.settings.currency;
   document.getElementById('setReceiptSize').value = db.settings.receiptSize;
+  document.getElementById('setCreditDays').value = db.settings.creditDays;
+  document.getElementById('setReminderDays').value = db.settings.reminderDays;
+  document.getElementById('setReturnDays').value = db.settings.returnDays;
   const preview = document.getElementById('logoPreview');
   if(db.settings.logo){ preview.src = db.settings.logo; preview.style.display='block'; }
   else { preview.style.display='none'; }
@@ -2769,6 +3714,10 @@ async function saveSettings(){
   db.settings.footer = document.getElementById('setFooter').value.trim();
   db.settings.currency = document.getElementById('setCurrency').value.trim() || 'Rs.';
   db.settings.receiptSize = document.getElementById('setReceiptSize').value;
+  const whole = (id, fallback) => { const n = Math.trunc(numVal(id, fallback)); return isFinite(n) && n >= 0 ? n : fallback; };
+  db.settings.creditDays   = whole('setCreditDays', 14);
+  db.settings.reminderDays = whole('setReminderDays', 3);
+  db.settings.returnDays   = whole('setReturnDays', 30);
 
   await mutate('settings','upsert', settingsRow());
   settingsDirty = false;
@@ -2776,6 +3725,7 @@ async function saveSettings(){
   renderInventory();
   renderCart();
   renderSales();
+  renderDues();
   toast('Settings saved');
 }
 
@@ -2829,6 +3779,9 @@ const WIPE_TARGETS = [
   { key:'sales', table:'sales', label:'Sales history & statistics',
     desc:'All receipts, plus the revenue, profit and dashboard figures calculated from them.',
     count:()=>db.sales.length },
+  { key:'payments', table:'payments', label:'Payments, dues & returns',
+    desc:'Every payment received, every return, and therefore every outstanding balance. Bills stay, but they will all read as unpaid.',
+    count:()=>db.payments.length + db.returns.length },
   { key:'purchases', table:'purchases', label:'Purchase / restock history',
     desc:'Recorded restocks from suppliers. Current stock levels stay as they are.',
     count:()=>db.purchases.length },
@@ -2904,6 +3857,12 @@ async function runWipe(){
     await mutate(t.table, 'deleteAll', {});
   };
 
+  /* Payments and returns hang off bills, so erasing the bills has to take them
+     with it — an orphaned payment would show up as credit out of nowhere. */
+  if(keys.includes('payments') || keys.includes('sales') || keys.includes('customers')){
+    db.returns = [];  await mutate('returns','deleteAll', {});
+    db.payments = []; await mutate('payments','deleteAll', {});
+  }
   if(keys.includes('sales')) await del('sales');
   if(keys.includes('purchases')) await del('purchases');
   if(keys.includes('books')) await del('books');
@@ -2919,6 +3878,7 @@ async function runWipe(){
   renderSuppliers();
   renderPurchases();
   renderCustomers();
+  renderDues();
   renderDashboard();
 
   closeWipeModal();
@@ -2973,6 +3933,18 @@ document.getElementById('confirm-modal').addEventListener('click', e=>{
 });
 document.addEventListener('keydown', e=>{
   if(e.key === 'Escape' && confirmResolve) closeConfirm(false);
+});
+
+/* Same dismissal rules for the payment and return sheets: click the backdrop
+   or press Escape and nothing is recorded. */
+['pay-modal','return-modal'].forEach(id=>{
+  const m = document.getElementById(id);
+  if(m) m.addEventListener('click', e=>{ if(e.target.id === id){ id === 'pay-modal' ? closePayModal() : closeReturnModal(); } });
+});
+document.addEventListener('keydown', e=>{
+  if(e.key !== 'Escape') return;
+  if(document.getElementById('pay-modal')?.classList.contains('show')) closePayModal();
+  else if(document.getElementById('return-modal')?.classList.contains('show')) closeReturnModal();
 });
 
 /* ---------- Theme (light / dark) ---------- */

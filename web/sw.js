@@ -4,7 +4,7 @@
    data does not pass through here; that lives in IndexedDB and the outbox
    inside the page. Bump CACHE when you deploy so old shells are cleared out. */
 
-const CACHE = 'bookstore-shell-v3';
+const CACHE = 'bookstore-shell-v4';
 
 const SHELL = [
   './',
