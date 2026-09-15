@@ -492,6 +492,7 @@
   .sync-badge.is-synced{ color:var(--success); }
   .sync-badge.is-pending, .sync-badge.is-working{ color:var(--warning); }
   .sync-badge.is-offline{ color:var(--sub); }
+  .sync-badge.is-error{ color:var(--error); }
   .sync-badge.is-working::before{ animation:blink 1.1s ease-in-out infinite; }
   @keyframes blink{ 50%{ opacity:.2; } }
 
@@ -1383,6 +1384,7 @@ function looksOffline(err){
 
 async function pushOutbox(){
   const ops = await outboxAll();
+  const dropped = [];
   for(const op of ops){
     let error = null;
     try{
@@ -1397,11 +1399,18 @@ async function pushOutbox(){
 
     if(error){
       if(looksOffline(error)){ lastSyncError = 'offline'; return false; }
-      // A data-level rejection would jam the queue forever, so drop it and carry on.
+      // A data-level rejection would jam the queue forever, so the op is dropped
+      // — but never quietly: the change is gone and the user has to know.
       console.warn('sync: dropped op', op.table, op.type, error.message || error);
+      dropped.push(op.table + ': ' + (error.message || 'rejected'));
     }
     await outboxDel(op.seq);
     updateSyncBadge();
+  }
+  if(dropped.length){
+    lastSyncError = dropped[0];
+    toast('The server rejected a change — ' + dropped[0]);
+    return true;
   }
   lastSyncError = '';
   return true;
@@ -1449,12 +1458,16 @@ async function updateSyncBadge(){
     el.textContent = pending ? 'Offline · ' + pending + ' waiting' : 'Offline';
   } else if(pending){
     el.classList.add('is-pending'); el.textContent = pending + ' waiting to sync';
+  } else if(lastSyncError && lastSyncError !== 'offline'){
+    el.classList.add('is-error'); el.textContent = 'Sync problem';
   } else {
     el.classList.add('is-synced'); el.textContent = 'Synced';
   }
   el.title = pending
     ? pending + ' change' + (pending === 1 ? '' : 's') + ' saved on this device, not yet sent to the server'
-    : 'Everything on this device is on the server';
+    : (lastSyncError && lastSyncError !== 'offline')
+      ? 'The server refused the last change: ' + lastSyncError
+      : 'Everything on this device is on the server';
   const s = document.getElementById('syncState');
   if(s) s.textContent = el.textContent;
 }
@@ -1571,12 +1584,16 @@ async function checkExistingSession(){
 
 /* ---------- Data loaders (Supabase) ---------- */
 async function refreshSettings(){
-  let { data, error } = await sb.from('settings').select('*').eq('user_id', currentUser.id).maybeSingle();
+  /* Deliberately not maybeSingle(): on a database left over from the old schema
+     this table can hold more than one row per user, and maybeSingle() throws on
+     that, which used to take the whole sync down with it. */
+  let { data: rows, error } = await sb.from('settings').select('*').eq('user_id', currentUser.id).limit(1);
   if(error) throw error;
+  let data = (rows && rows[0]) || null;
   if(!data){
-    const res = await sb.from('settings').insert({ user_id: currentUser.id }).select().maybeSingle();
+    const res = await sb.from('settings').insert({ user_id: currentUser.id }).select();
     if(res.error) throw res.error;
-    data = res.data;
+    data = (res.data && res.data[0]) || null;
   }
   if(data){
     db.settings = {
@@ -1642,6 +1659,13 @@ function init(){
   document.getElementById('discountValue').addEventListener('input', renderCart);
   document.getElementById('discountType').addEventListener('change', onDiscountTypeChange);
   document.getElementById('taxPct').addEventListener('input', renderCart);
+  ['setStoreName','setPhone','setAddress','setFooter','setCurrency','setReceiptSize'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el){
+      el.addEventListener('input',  ()=>{ settingsDirty = true; });
+      el.addEventListener('change', ()=>{ settingsDirty = true; });
+    }
+  });
   document.getElementById('fStock').addEventListener('input', updateReorderSuggestion);
   document.getElementById('fReorder').addEventListener('input', updateReorderSuggestion);
   updateReorderSuggestion();
@@ -2092,7 +2116,7 @@ function renderPurchases(){
       <td>${escapeHtml(p.bookTitle||'-')}</td>
       <td>${escapeHtml(supplier?supplier.name:'-')}</td>
       <td>${p.qty}</td>
-      <td>${db.settings.currency}${p.costEach.toFixed(2)}</td>
+      <td>${money(p.costEach)}</td>
     </tr>`;
   }).join('');
 }
@@ -2108,7 +2132,7 @@ function renderCustomers(){
     return `<tr data-cust-row="${c.id}">
       <td>${escapeHtml(c.name)}</td>
       <td>${escapeHtml(c.phone||'-')}</td>
-      <td>${db.settings.currency}${totalSpent.toFixed(2)}</td>
+      <td>${money(totalSpent)}</td>
       <td>${orders.length}</td>
       <td><a class="link-btn" onclick="viewCustomerHistory('${attrStr(c.id)}')">View Purchases</a></td>
     </tr>`;
@@ -2143,7 +2167,7 @@ function viewCustomerHistory(customerId){
   tr.className = 'expand-row';
   tr.id = panelId;
   tr.innerHTML = `<td colspan="5">
-    <div class="muted" style="margin-bottom:8px;">${escapeHtml(c.name)} — ${orders.length} purchases · ${cur}${orders.reduce((t,o)=>t+o.total,0).toFixed(2)} total</div>
+    <div class="muted" style="margin-bottom:8px;">${escapeHtml(c.name)} — ${orders.length} purchases · ${money(orders.reduce((t,o)=>t+o.total,0))} total</div>
     <div class="table-wrap"><table>
       <thead><tr><th>Receipt #</th><th>Date</th><th>Items</th><th>Total</th><th></th></tr></thead>
       <tbody>
@@ -2151,7 +2175,7 @@ function viewCustomerHistory(customerId){
           <td>#${escapeHtml(String(o.receiptNo))}</td>
           <td>${new Date(o.date).toLocaleDateString()} ${new Date(o.date).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</td>
           <td>${o.items.reduce((n,i)=>n+i.qty,0)}</td>
-          <td>${cur}${o.total.toFixed(2)}</td>
+          <td>${money(o.total)}</td>
           <td><button class="small btn secondary" onclick="reprintSale('${attrStr(o.receiptNo)}')">View Receipt</button></td>
         </tr>`).join('')}
       </tbody>
@@ -2178,7 +2202,7 @@ function renderInventory(){
       <td>${escapeHtml(b.title)}</td>
       <td>${escapeHtml(b.author||'-')}</td>
       <td>${escapeHtml(b.category||'-')}</td>
-      <td>${db.settings.currency}${b.price.toFixed(2)}</td>
+      <td>${money(b.price)}</td>
       <td class="${low?'low':''}">${b.stock}${low?' ⚠':''}</td>
       <td>
         <button class="small btn secondary" onclick="editBook('${attrStr(b.id)}')">Edit</button>
@@ -2219,7 +2243,7 @@ function renderBillSearch(){
     div.className='cart-line';
     div.innerHTML = `
       <span class="name">${escapeHtml(b.title)} <span class="muted">by ${escapeHtml(b.author||'Unknown')} — Stock: ${b.stock}</span></span>
-      <span>${db.settings.currency}${b.price.toFixed(2)}</span>
+      <span>${money(b.price)}</span>
       <button class="small btn" onclick="addToCart('${attrStr(b.id)}')" ${b.stock<=0?'disabled':''}>${b.stock<=0?'Out of stock':'Add'}</button>
     `;
     box.appendChild(div);
@@ -2278,7 +2302,7 @@ function renderCart(){
       div.innerHTML = `
         <span class="name">${escapeHtml(c.title)}</span>
         <input type="number" min="1" value="${c.qty}" onchange="updateQty('${attrStr(c.bookId)}', this.value)">
-        <span>${db.settings.currency}${(c.price*c.qty).toFixed(2)}</span>
+        <span>${money(c.price*c.qty)}</span>
         <button class="small btn danger" onclick="removeFromCart('${attrStr(c.bookId)}')">✕</button>
       `;
       box.appendChild(div);
@@ -2293,20 +2317,20 @@ function renderCart(){
   const cur = db.settings.currency;
   const hint = document.getElementById('discountHint');
   if(disc.input>0 && disc.type==='fixed' && disc.input>subtotal){
-    hint.innerHTML = 'Capped at bill subtotal ('+cur+subtotal.toFixed(2)+')';
+    hint.innerHTML = 'Capped at bill subtotal (' + money(subtotal) + ')';
   } else if(disc.input>0 && disc.type==='percent' && disc.input>100){
     hint.innerHTML = 'Capped at 100%';
   } else if(disc.amt>0){
     hint.innerHTML = disc.type==='fixed'
       ? '= '+disc.pct.toFixed(1)+'% off'
-      : '= '+cur+disc.amt.toFixed(2)+' off';
+      : '= ' + money(disc.amt) + ' off';
   } else {
     hint.innerHTML = '&nbsp;';
   }
-  document.getElementById('sumSubtotal').textContent = cur+subtotal.toFixed(2);
-  document.getElementById('sumDiscount').textContent = '-'+cur+discAmt.toFixed(2);
-  document.getElementById('sumTax').textContent = '+'+cur+taxAmt.toFixed(2);
-  document.getElementById('sumTotal').textContent = cur+total.toFixed(2);
+  document.getElementById('sumSubtotal').textContent = money(subtotal);
+  document.getElementById('sumDiscount').textContent = '-' + money(discAmt);
+  document.getElementById('sumTax').textContent = '+' + money(taxAmt);
+  document.getElementById('sumTotal').textContent = money(total);
 }
 
 async function completeSale(){
@@ -2401,7 +2425,7 @@ function receiptMetaDate(d){
 function buildReceiptA4HTML(sale){
   const cur = db.settings.currency;
   const s = db.settings;
-  const money = n => cur + Number(n).toFixed(2);
+  const money = n => cur + fmtAmount(n);
 
   // "ISBN / Code" for the line: stored on the sale line, else looked up from the book
   // by id, else (older sales that saved neither) matched back by title.
@@ -2419,7 +2443,7 @@ function buildReceiptA4HTML(sale){
       <td class="qty">${it.qty}</td>
       <td class="code">${escapeHtml(String(codeOf(it)))}</td>
       <td class="desc">${escapeHtml(it.title)}</td>
-      <td class="num">${Number(it.price).toFixed(2)}</td>
+      <td class="num">${fmtAmount(it.price)}</td>
       <td class="num">${money(it.price*it.qty)}</td>
     </tr>`).join('');
 
@@ -2477,7 +2501,7 @@ function buildReceiptHTML(sale){
   const s = db.settings;
   const dateStr = new Date(sale.date).toLocaleString();
   let itemsHtml = sale.items.map(it=>`
-    <div class="r-row"><span>${escapeHtml(it.title)} x${it.qty}</span><span>${cur}${(it.price*it.qty).toFixed(2)}</span></div>
+    <div class="r-row"><span>${escapeHtml(it.title)} x${it.qty}</span><span>${money(it.price*it.qty)}</span></div>
   `).join('');
   return `
     <div class="r-center">
@@ -2494,11 +2518,11 @@ function buildReceiptHTML(sale){
     <div class="r-line"></div>
     ${itemsHtml}
     <div class="r-line"></div>
-    <div class="r-row"><span>Subtotal</span><span>${cur}${sale.subtotal.toFixed(2)}</span></div>
-    ${sale.discAmt>0?`<div class="r-row"><span>Discount ${sale.discType==='fixed'?'(flat)':'('+(+sale.discPct).toFixed(sale.discPct%1?1:0)+'%)'}</span><span>-${cur}${sale.discAmt.toFixed(2)}</span></div>`:''}
-    ${sale.taxPct?`<div class="r-row"><span>Tax (${sale.taxPct}%)</span><span>+${cur}${sale.taxAmt.toFixed(2)}</span></div>`:''}
+    <div class="r-row"><span>Subtotal</span><span>${money(sale.subtotal)}</span></div>
+    ${sale.discAmt>0?`<div class="r-row"><span>Discount ${sale.discType==='fixed'?'(flat)':'('+(+sale.discPct).toFixed(sale.discPct%1?1:0)+'%)'}</span><span>-${money(sale.discAmt)}</span></div>`:''}
+    ${sale.taxPct?`<div class="r-row"><span>Tax (${sale.taxPct}%)</span><span>+${money(sale.taxAmt)}</span></div>`:''}
     <div class="r-line"></div>
-    <div class="r-row" style="font-weight:bold; font-size:16px;"><span>TOTAL</span><span>${cur}${sale.total.toFixed(2)}</span></div>
+    <div class="r-row" style="font-weight:bold; font-size:16px;"><span>TOTAL</span><span>${money(sale.total)}</span></div>
     <div class="r-row"><span>Payment</span><span>${escapeHtml(sale.payment)}</span></div>
     <div class="r-line"></div>
     <div class="r-center">${escapeHtml(s.footer).replace(/\n/g,'<br>')}</div>
@@ -2586,13 +2610,13 @@ function renderSales(){
       <td>${new Date(s.date).toLocaleDateString()} ${new Date(s.date).toLocaleTimeString()}</td>
       <td>${escapeHtml(s.customer)}</td>
       <td>${s.items.reduce((n,i)=>n+i.qty,0)} items</td>
-      <td>${db.settings.currency}${s.total.toFixed(2)}</td>
+      <td>${money(s.total)}</td>
       <td><button class="small btn secondary" onclick="reprintSale('${attrStr(s.receiptNo)}')">Reprint</button></td>
     `;
     tbody.appendChild(tr);
   });
   const totalRevenue = filtered.reduce((s,x)=>s+x.total,0);
-  document.getElementById('salesSummary').textContent = `${filtered.length} sales • ${db.settings.currency}${totalRevenue.toFixed(2)} revenue (in current filter)`;
+  document.getElementById('salesSummary').textContent = `${filtered.length} sales • ${money(totalRevenue)} revenue (in current filter)`;
   renderDashboard();
 }
 
@@ -2659,17 +2683,17 @@ function renderDashboard(){
   const mainStats = [
     {label:'Titles in Inventory', value: totalTitles, icon:'book'},
     {label:'Total Stock (units)', value: totalStockUnits, icon:'stack', cls:'cyan'},
-    {label:'Stock Value (at cost)', value: cur+stockValueCost.toFixed(2), icon:'wallet'},
-    {label:'Stock Value (at retail)', value: cur+stockValueRetail.toFixed(2), cls:'good', icon:'tag'},
+    {label:'Stock Value (at cost)', value: money(stockValueCost), icon:'wallet'},
+    {label:'Stock Value (at retail)', value: money(stockValueRetail), cls:'good', icon:'tag'},
   ];
   document.getElementById('statGridMain').innerHTML = mainStats.map(statCardHTML).join('');
 
   const salesStats = [
     {label:'Total Sales', value: sales.length, icon:'receipt'},
-    {label:'Total Revenue', value: cur+totalRevenue.toFixed(2), cls:'good', icon:'trend'},
-    {label: isLoss?'Net Loss':'Gross Profit', value: cur+Math.abs(grossProfit).toFixed(2), cls: isLoss?'warn':'good', icon:'coins'},
-    {label:"Today's Revenue", value: cur+todayRevenue.toFixed(2), sub:`${todayCount} sale${todayCount===1?'':'s'}`, icon:'sun', cls:'cyan'},
-    {label:"This Month's Revenue", value: cur+monthRevenue.toFixed(2), sub:`${monthCount} sale${monthCount===1?'':'s'}`, icon:'calendar'},
+    {label:'Total Revenue', value: money(totalRevenue), cls:'good', icon:'trend'},
+    {label: isLoss?'Net Loss':'Gross Profit', value: money(Math.abs(grossProfit)), cls: isLoss?'warn':'good', icon:'coins'},
+    {label:"Today's Revenue", value: money(todayRevenue), sub:`${todayCount} sale${todayCount===1?'':'s'}`, icon:'sun', cls:'cyan'},
+    {label:"This Month's Revenue", value: money(monthRevenue), sub:`${monthCount} sale${monthCount===1?'':'s'}`, icon:'calendar'},
     {label:'Low Stock Items', value: lowStock.length, cls: lowStock.length?'warn':'good', icon:'alert'},
   ];
   document.getElementById('statGridSales').innerHTML = salesStats.map(statCardHTML).join('');
@@ -2695,7 +2719,16 @@ function renderDashboard(){
 }
 
 /* ---------- Settings ---------- */
-function loadSettingsForm(){
+/* True while the Settings form holds edits the user has not saved. A pull that
+   lands mid-typing must not repaint the fields underneath them. */
+let settingsDirty = false;
+
+function loadSettingsForm(force){
+  if(settingsDirty && !force) return;
+  return loadSettingsFormNow();
+}
+
+function loadSettingsFormNow(){
   document.getElementById('setStoreName').value = db.settings.storeName;
   document.getElementById('setPhone').value = db.settings.phone;
   document.getElementById('setAddress').value = db.settings.address;
@@ -2738,6 +2771,7 @@ async function saveSettings(){
   db.settings.receiptSize = document.getElementById('setReceiptSize').value;
 
   await mutate('settings','upsert', settingsRow());
+  settingsDirty = false;
   applyStoreHeader();
   renderInventory();
   renderCart();
@@ -2850,7 +2884,8 @@ async function resetSettingsToDefaults(){
   db.settings = Object.assign({}, DEFAULT_SETTINGS);
   await mutate('settings','upsert', settingsRow());
   currentReceiptSize = db.settings.receiptSize;
-  loadSettingsForm();
+  settingsDirty = false;
+  loadSettingsForm(true);
   applyStoreHeader();
   return true;
 }
@@ -3010,6 +3045,18 @@ function setNum(id, v){
   const el = document.getElementById(id);
   if(el) el.value = (v === 0 || v === null || v === undefined || v === '') ? '' : v;
 }
+
+/* Money is grouped the South Asian way — 3,11,400.00 rather than 311,400.00 —
+   and always to two decimals. Kept in one place so every screen, the receipt
+   and the invoice agree. The CSV export deliberately does NOT use this: the
+   separators would break the columns. */
+function fmtAmount(n){
+  const v = Number(n);
+  return (isFinite(v) ? v : 0).toLocaleString('en-IN', {
+    minimumFractionDigits: 2, maximumFractionDigits: 2
+  });
+}
+function money(n){ return db.settings.currency + fmtAmount(n); }
 
 function escapeHtml(str){
   if(!str) return '';
