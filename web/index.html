@@ -3,23 +3,23 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="color-scheme" content="light dark">
-<meta name="theme-color" content="#fafafa" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0a1722" media="(prefers-color-scheme: dark)">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#fafafa">
 <title>Bookstore Manager</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <script>
-/* Applies a pinned theme before first paint so there is no light/dark flash. */
+/* Settles the theme before first paint so there is no light/dark flash.
+   The app is a light app by default: the machine being set to dark does not
+   drag the till into dark mode. Only the moon button in the header does, and
+   that choice is remembered on this device. */
 {
-  try{
-    const cs = localStorage.getItem('color-scheme');
-    if(cs === 'light' || cs === 'dark'){
-      document.querySelector('meta[name="color-scheme"]').content = cs;
-      document.documentElement.classList.add('theme-' + cs);
-    }
-  }catch(e){}
+  let cs = 'light';
+  try{ if(localStorage.getItem('color-scheme') === 'dark') cs = 'dark'; }catch(e){}
+  document.documentElement.classList.add('theme-' + cs);
+  const m = document.querySelector('meta[name="color-scheme"]'); if(m) m.content = cs;
+  const t = document.querySelector('meta[name="theme-color"]'); if(t) t.content = cs === 'dark' ? '#0a1722' : '#fafafa';
 }
 </script>
 <style>
@@ -427,6 +427,36 @@
     font-size:0.8125rem; line-height:1.55; box-shadow:var(--shadow);
   }
   .banner strong{ color:inherit; }
+
+  /* ======================= CLEAR (×) BUTTONS ======================
+     A small cross inside a field that has something in it. It only appears
+     when there is something to clear, and it never takes a tab stop — the
+     keyboard already has a faster way to empty a field. */
+  .field-clear-wrap{ position:relative; display:block; }
+  .input-group > .field-clear-wrap{ flex:1 1 auto; min-width:0; }
+  .field-clear-wrap > input, .field-clear-wrap > select, .field-clear-wrap > textarea{ width:100%; }
+  .field-clear{
+    position:absolute; top:1px; bottom:1px; right:1px; width:30px;
+    display:none; align-items:center; justify-content:center;
+    padding:0; border:none; background:none; cursor:pointer;
+    color:var(--sub); border-radius:var(--r-2xs);
+    transition:color var(--dur), background var(--dur);
+  }
+  .field-clear.show{ display:flex; }
+  .field-clear:hover{ color:var(--error); background:var(--error-bg); }
+  .field-clear.past-toggle{ right:36px; }   /* left of a combo's chevron   */
+  .field-clear.past-native{ right:26px; }   /* left of a date/select arrow */
+  .field-clear.at-top{ top:3px; bottom:auto; height:30px; right:3px; }
+  input.has-clear, select.has-clear, textarea.has-clear{ padding-right:34px; }
+  input.has-clear.pad-native, select.has-clear{ padding-right:56px; }
+  .combo input.has-clear{ padding-right:68px; }
+  /* The up/down spinner would sit under the cross, and nobody steps a price
+     one rupee at a time — so on the fields that carry a cross it goes. The
+     quantity boxes in the bill and the returns table keep theirs; they have
+     no cross precisely so that they can. */
+  input[type=number].has-clear::-webkit-outer-spin-button,
+  input[type=number].has-clear::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
+  input[type=number].has-clear{ -moz-appearance:textfield; appearance:textfield; }
 
   /* ============================ COMBO ============================ */
   .combo{ position:relative; }
@@ -991,7 +1021,7 @@
         <div>
           <label>Discount</label>
           <div class="input-group">
-            <select id="discountType" style="max-width:120px;">
+            <select id="discountType" style="max-width:150px;">
               <option value="percent">Percent (%)</option>
               <option value="fixed" id="discountFixedOpt">Fixed (Rs.)</option>
             </select>
@@ -1710,6 +1740,7 @@ function renderAll(){
   renderDashboard();
   loadSettingsForm();
   applyStoreHeader();
+  refreshClears();
 }
 
 window.addEventListener('online',  ()=>{ updateSyncBadge(); scheduleSync(300); });
@@ -2191,6 +2222,7 @@ function resetForm(){
   document.getElementById('fReorder').value='';
   document.getElementById('invFormTitle').textContent='Add New Book';
   updateReorderSuggestion();
+  refreshClears();
 }
 
 async function saveBook(){
@@ -2243,6 +2275,7 @@ function editBook(id){
   updateReorderSuggestion();
   document.getElementById('invFormTitle').textContent='Edit Book';
   window.scrollTo(0,0);
+  refreshClears();
 }
 
 async function deleteBook(id){
@@ -2271,6 +2304,7 @@ function resetSupplierForm(){
   document.getElementById('supPhone').value='';
   document.getElementById('supNotes').value='';
   document.getElementById('supFormTitle').textContent='Add Supplier';
+  refreshClears();
 }
 
 async function saveSupplier(){
@@ -2309,6 +2343,7 @@ function editSupplier(id){
   document.getElementById('supNotes').value=s.notes||'';
   document.getElementById('supFormTitle').textContent='Edit Supplier';
   window.scrollTo(0,0);
+  refreshClears();
 }
 
 async function deleteSupplier(id){
@@ -2566,6 +2601,7 @@ function clearCart(){
   document.getElementById('dueDate').value='';
   applyDiscountMode();
   renderCart();
+  refreshClears();
 }
 
 function renderCart(){
@@ -2685,6 +2721,7 @@ function renderBillCredit(total){
         ? 'Includes ' + money(prev) + ' of earlier dues. Leave blank to take the lot.'
         : 'Leave blank if he is paying the bill in full.';
   }
+  refreshClears();
 }
 
 async function completeSale(){
@@ -3002,6 +3039,7 @@ function clearSalesFilter(){
   document.getElementById('salesFrom').value='';
   document.getElementById('salesTo').value='';
   renderSales();
+  refreshClears();
 }
 
 function exportSalesCSV(){
@@ -3341,6 +3379,7 @@ function openPayModal(customerId){
   document.getElementById('payMethod').value = 'Cash';
   document.getElementById('payNote').value = '';
   updatePayPreview();
+  refreshClears();
   document.getElementById('pay-modal').classList.add('show');
   setTimeout(() => document.getElementById('payAmount').focus(), 60);
 }
@@ -3444,6 +3483,7 @@ function openReturnModal(saleId){
   document.getElementById('returnMode').value = sale.customerId ? 'ledger' : 'cash';
   document.getElementById('returnModeRow').style.display = sale.customerId ? '' : 'none';
   updateReturnTotal();
+  refreshClears();
   document.getElementById('return-modal').classList.add('show');
 }
 
@@ -3454,15 +3494,21 @@ function closeReturnModal(){
 
 function collectReturnLines(){
   if(!returnSale) return [];
+  const already = returnedQtyMap(returnSale.id);
   const lines = [];
   document.querySelectorAll('#returnBody .ret-qty').forEach(inp => {
     const idx = Number(inp.dataset.idx);
-    const qty = Math.max(0, Math.trunc(Number(inp.value) || 0));
-    if(!qty) return;
     const it = returnSale.items[idx];
+    /* The max= on the input is only a hint the browser may or may not enforce,
+       so the real cap is applied here: never more than were sold, less
+       whatever has already come back on an earlier return. */
+    const left = Math.max(0, it.qty - (already[idx] || 0));
+    const qty = Math.min(left, Math.max(0, Math.trunc(Number(inp.value) || 0)));
+    if(qty !== Math.max(0, Math.trunc(Number(inp.value) || 0))) inp.value = String(qty);
+    if(!qty) return;
     const cond = document.querySelector('#returnBody .ret-cond[data-idx="' + idx + '"]').value;
     lines.push({ idx, bookId: it.bookId, title: it.title, price: it.price, qty, condition: cond,
-                 value: round2(it.price * qty) });
+                 cost: it.cost || 0, value: round2(it.price * qty) });
   });
   return lines;
 }
@@ -3603,12 +3649,27 @@ function renderDashboard(){
       sellerCounts[it.title] = (sellerCounts[it.title]||0) + it.qty;
     });
   });
-  /* Goods that came back were never really sold, so they come off revenue. */
+  /* Goods that came back were never really sold, so they come off revenue.
+     Their cost has to come back out of cost-of-goods too — but only for the
+     copies that went back on the shelf. A damaged copy is money genuinely
+     lost, so its cost stays in and the profit figure shows the hit. */
   const returnsTotal = round2(db.returns.reduce((t,r) => t + r.amount, 0));
+  let returnedCost = 0, damagedCost = 0;
+  db.returns.forEach(r => {
+    const sale = db.sales.find(s => s.id === r.saleId);
+    (r.items||[]).forEach(it => {
+      const cost = (it.cost != null ? it.cost
+                   : (sale && sale.items[it.idx] ? (sale.items[it.idx].cost || 0) : 0)) * it.qty;
+      if(it.condition === 'good') returnedCost += cost; else damagedCost += cost;
+    });
+  });
+  returnedCost = round2(returnedCost);
+  damagedCost = round2(damagedCost);
   const netRevenue = round2(totalRevenue - returnsTotal);
+  const netCOGS = round2(totalCOGS - returnedCost);
   const R = receivables();
 
-  const grossProfit = netRevenue - totalDiscount - totalCOGS; // revenue after discount and returns, minus cost of goods (tax is pass-through)
+  const grossProfit = netRevenue - totalDiscount - netCOGS; // revenue after discount and returns, minus the cost of what actually stayed sold
   const isLoss = grossProfit < 0;
 
   const mainStats = [
@@ -3622,7 +3683,7 @@ function renderDashboard(){
   const salesStats = [
     {label:'Total Sales', value: sales.length, icon:'receipt'},
     {label:'Total Revenue', value: money(netRevenue), sub: returnsTotal ? 'after '+money(returnsTotal)+' returned' : '', cls:'good', icon:'trend'},
-    {label: isLoss?'Net Loss':'Gross Profit', value: money(Math.abs(grossProfit)), cls: isLoss?'warn':'good', icon:'coins'},
+    {label: isLoss?'Net Loss':'Gross Profit', value: money(Math.abs(grossProfit)), sub: damagedCost ? money(damagedCost)+' written off damaged' : '', cls: isLoss?'warn':'good', icon:'coins'},
     {label:"Today's Revenue", value: money(todayRevenue), sub:`${todayCount} sale${todayCount===1?'':'s'}`, icon:'sun', cls:'cyan'},
     {label:"This Month's Revenue", value: money(monthRevenue), sub:`${monthCount} sale${monthCount===1?'':'s'}`, icon:'calendar'},
     {label:'Money Owed to You', value: money(R.totalOutstanding), sub: R.overdue ? money(R.overdue)+' overdue' : 'nothing overdue', cls: R.overdue?'warn':'good', icon:'wallet'},
@@ -3683,6 +3744,7 @@ function loadSettingsFormNow(){
   const preview = document.getElementById('logoPreview');
   if(db.settings.logo){ preview.src = db.settings.logo; preview.style.display='block'; }
   else { preview.style.display='none'; }
+  refreshClears();
 }
 
 function handleLogoUpload(evt){
@@ -3948,13 +4010,11 @@ document.addEventListener('keydown', e=>{
 });
 
 /* ---------- Theme (light / dark) ---------- */
-const schemeMedia = window.matchMedia('(prefers-color-scheme: dark)');
+/* Light unless this device has explicitly been switched to dark. The
+   operating system's own setting is deliberately not consulted — a shop
+   counter should not change colour because Windows decided it was evening. */
 function currentScheme(){
-  const meta = document.querySelector('meta[name="color-scheme"]');
-  const pinned = meta ? meta.content : 'light dark';
-  if(pinned === 'dark') return 'dark';
-  if(pinned === 'light') return 'light';
-  return schemeMedia.matches ? 'dark' : 'light';
+  return document.documentElement.classList.contains('theme-dark') ? 'dark' : 'light';
 }
 function paintThemeButton(){
   const btn = document.getElementById('themeBtn');
@@ -3967,13 +4027,102 @@ function paintThemeButton(){
 }
 function toggleTheme(){
   const next = currentScheme() === 'dark' ? 'light' : 'dark';
-  document.querySelector('meta[name="color-scheme"]').content = next;
   document.documentElement.classList.toggle('theme-dark', next === 'dark');
   document.documentElement.classList.toggle('theme-light', next === 'light');
+  const m = document.querySelector('meta[name="color-scheme"]'); if(m) m.content = next;
+  const t = document.querySelector('meta[name="theme-color"]'); if(t) t.content = next === 'dark' ? '#0a1722' : '#fafafa';
   try{ localStorage.setItem('color-scheme', next); }catch(e){}
   paintThemeButton();
 }
-schemeMedia.addEventListener('change', paintThemeButton);
+
+/* ==========================================================================
+   CLEAR (×) BUTTONS
+   --------------------------------------------------------------------------
+   Every field you can type into gets a small cross to empty it in one click.
+   Deliberately NOT given one:
+     · checkboxes, radios and the logo file picker — there is nothing to clear
+     · fixed-choice dropdowns (payment method, paper size, refund type) —
+       emptying them would leave the bill in a state it cannot be saved in.
+       A dropdown that has a real "nothing" option, like All Categories, does
+       get one, and the cross puts it back to that.
+     · the quantity steppers in the bill lines and the returns table — the
+       cross would crowd a 76px box, and removing a line is what the ✕ beside
+       it is already for.
+   Clearing fires the same input and change events typing does, so every
+   screen that watches a field reacts exactly as if you had deleted it by hand.
+   ========================================================================== */
+
+const CLEAR_ICON = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+const CLEAR_SKIP_TYPES = new Set(['file','checkbox','radio','hidden','submit','button','image','range','color']);
+
+function clearableFields(){
+  return [...document.querySelectorAll('input, select, textarea')].filter(el=>{
+    if(el.dataset.noClear === '1') return false;
+    if(el.closest('.cart-line') || el.closest('#returnBody')) return false;
+    if(el.tagName === 'INPUT' && CLEAR_SKIP_TYPES.has((el.getAttribute('type')||'text').toLowerCase())) return false;
+    // a dropdown only gets one if "nothing chosen" is a state it actually has
+    if(el.tagName === 'SELECT') return [...el.options].some(o => o.value === '');
+    return true;
+  });
+}
+
+function enhanceClears(){
+  clearableFields().forEach(el=>{
+    if(el.dataset.clearReady === '1') return;
+    el.dataset.clearReady = '1';
+
+    const combo = el.closest('.combo');
+    const type = (el.getAttribute('type')||'').toLowerCase();
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'field-clear';
+    btn.tabIndex = -1;
+    btn.title = 'Clear';
+    btn.setAttribute('aria-label', 'Clear this field');
+    btn.innerHTML = CLEAR_ICON;
+
+    el.classList.add('has-clear');
+    if(combo){
+      btn.classList.add('past-toggle');
+      combo.appendChild(btn);
+    } else {
+      /* A dropdown's arrow is painted by the browser at the far right and will
+         not move, so the cross goes to the left of it. A date field's calendar
+         button does follow the padding, so there the cross can sit flush at
+         the edge like every other field and the calendar tucks in beside it. */
+      if(el.tagName === 'SELECT'){ btn.classList.add('past-native'); el.classList.add('pad-native'); }
+      if(el.tagName === 'TEXTAREA') btn.classList.add('at-top');
+      const wrap = document.createElement('span');
+      wrap.className = 'field-clear-wrap';
+      el.parentNode.insertBefore(wrap, el);
+      wrap.appendChild(el);
+      wrap.appendChild(btn);
+    }
+
+    // mousedown would blur the field first, which closes a combo before the click lands
+    btn.addEventListener('mousedown', e => e.preventDefault());
+    btn.addEventListener('click', ()=>{
+      el.value = '';
+      el.dispatchEvent(new Event('input',  {bubbles:true}));
+      el.dispatchEvent(new Event('change', {bubbles:true}));
+      try{ el.focus(); }catch(e){}
+      refreshClears();
+    });
+    el._clearBtn = btn;
+  });
+  refreshClears();
+}
+
+function refreshClears(){
+  document.querySelectorAll('[data-clear-ready="1"]').forEach(el=>{
+    const btn = el._clearBtn;
+    if(!btn) return;
+    btn.classList.toggle('show', String(el.value || '') !== '' && !el.disabled && !el.readOnly);
+  });
+}
+
+document.addEventListener('input',  refreshClears);
+document.addEventListener('change', refreshClears);
 
 /* ---------- Tables ----------
    Copies each column's header onto its cells so narrow screens can show the
@@ -4045,6 +4194,7 @@ if('serviceWorker' in navigator && !isDesktopApp && location.protocol.indexOf('h
 }
 
 initCombos();
+enhanceClears();
 paintThemeButton();
 updateSyncBadge();
 decorateTables();
