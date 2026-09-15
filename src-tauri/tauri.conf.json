@@ -1,0 +1,57 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Bookstore Manager",
+  "version": "1.0.0",
+  "identifier": "com.troontechnologies.bookstore",
+  "build": {
+    "frontendDist": "../web"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Bookstore Manager",
+        "width": 1280,
+        "height": 860,
+        "minWidth": 900,
+        "minHeight": 600,
+        "resizable": true,
+        "center": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis"],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.ico"
+    ],
+    "createUpdaterArtifacts": true,
+    "publisher": "Troon Technologies",
+    "shortDescription": "Bookstore inventory, billing and sales",
+    "longDescription": "Inventory, billing, suppliers, customers and sales history for your bookstore. Works offline and syncs to Supabase when a connection is available.",
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser",
+        "languages": ["English"]
+      }
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "PASTE_YOUR_TAURI_PUBLIC_KEY_HERE",
+      "endpoints": [
+        "https://github.com/ansabsajjad/BookStore/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
+    }
+  }
+}

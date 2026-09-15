@@ -1,0 +1,52 @@
+name: Release Windows app
+
+# Push a version tag to cut a release:
+#   git tag v1.0.1 && git push BookStore v1.0.1
+#
+# The job builds the installer, signs the update bundle and publishes both —
+# plus the latest.json the installed app polls — to a GitHub Release.
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Install the Tauri CLI
+        run: npm install
+
+      - name: Build, sign and publish
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: 'Bookstore Manager ${{ github.ref_name }}'
+          releaseBody: 'Installed copies update themselves the next time they start.'
+          releaseDraft: false
+          prerelease: false
+          includeUpdaterJson: true

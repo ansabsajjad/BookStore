@@ -1,0 +1,16 @@
+{
+  "name": "bookstore-manager",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Bookstore Manager — one codebase, served on the web and shipped as a Windows app.",
+  "scripts": {
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "tauri": "tauri",
+    "keygen": "tauri signer generate -w .tauri/bookstore.key",
+    "serve": "npx --yes serve web"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2"
+  }
+}
