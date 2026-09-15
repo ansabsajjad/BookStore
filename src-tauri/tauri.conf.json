@@ -45,7 +45,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "PASTE_YOUR_TAURI_PUBLIC_KEY_HERE",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDQzNjU3OUEzMzJFRjE4NzgKUldSNEdPOHlvM2xsUXhuM0VPMHdPaEtGdW90WWVTRXVHSVFkWFB1WjFVUkhWc1BWeU1jZzVKOWcK",
       "endpoints": [
         "https://github.com/ansabsajjad/BookStore/releases/latest/download/latest.json"
       ],
