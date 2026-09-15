@@ -13,6 +13,10 @@ tauri-build = { version = "2", features = [] }
 tauri = { version = "2", features = [] }
 tauri-plugin-updater = "2"
 tauri-plugin-process = "2"
+# tauri::generate_context! expands to code that calls into both of these,
+# so they have to be direct dependencies even though nothing here names them.
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
 
 [profile.release]
 codegen-units = 1

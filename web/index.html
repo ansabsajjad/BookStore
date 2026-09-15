@@ -323,6 +323,10 @@
   .input-group select{ flex:0 0 auto; }
   .input-group input{ flex:1 1 auto; min-width:0; }
   .search{ margin-bottom:14px; }
+  /* A search box sharing a row with another control must not carry its own
+     bottom margin — the grid stretches its neighbour, which then looks taller. */
+  .row > .search{ margin-bottom:0; }
+  .row:has(> .search){ margin-bottom:14px; }
 
   /* ============================ BUTTONS ============================ */
   button.btn, label.btn{
@@ -587,6 +591,35 @@
   .a4-note{ margin-top:10px; padding:13px 16px; border-radius:10px; background:#f7f9fb;
     font-size:0.75rem; color:#5b5b5b; white-space:pre-wrap; }
   .a4-paid{ margin-top:8px; font-size:0.75rem; color:#8c8c8c; }
+
+  /* ============================ CONFIRM MODAL ============================ */
+  #confirm-modal{
+    display:none; position:fixed; inset:0; z-index:120;
+    align-items:center; justify-content:center; padding:20px;
+    background:color-mix(in oklab, var(--brand-navy) 55%, transparent);
+    backdrop-filter:blur(5px); -webkit-backdrop-filter:blur(5px);
+  }
+  #confirm-modal.show{ display:flex; }
+  #confirm-modal.show > *{ animation:pop .2s ease-out both; }
+  @media (prefers-reduced-motion: reduce){ #confirm-modal.show > *{ animation:none; } }
+  .confirm-box{
+    width:100%; max-width:400px; padding:28px;
+    background:var(--paper); border-radius:var(--r-2xl);
+    box-shadow:var(--shadow-lg); text-align:center;
+  }
+  .confirm-icon{
+    width:56px; height:56px; margin:0 auto 16px; border-radius:var(--r-md);
+    display:grid; place-items:center;
+    background:var(--error-bg); color:var(--error);
+  }
+  .confirm-icon svg{ width:26px; height:26px; }
+  .confirm-box.is-neutral .confirm-icon{ background:var(--primary-soft); color:var(--primary); }
+  .confirm-box h2{ margin:0 0 8px; font-size:1.125rem; }
+  .confirm-text{ margin:0; font-size:0.875rem; color:var(--sub); line-height:1.6; }
+  .confirm-text b{ color:var(--ink-strong); font-weight:600; }
+  .confirm-actions{ display:flex; gap:10px; justify-content:center; margin-top:24px; }
+  .confirm-actions .btn{ flex:1 1 0; min-width:0; }
+  @media (max-width:430px){ .confirm-actions{ flex-direction:column-reverse; } }
 
   /* ============================ ERASE MODAL ============================ */
   .wipe-box{
@@ -967,7 +1000,11 @@
         <div><label>Stock Quantity *</label><input type="number" id="fStock" min="0" placeholder="0"></div>
       </div>
       <div class="row cols-4" style="margin-top:10px;">
-        <div><label>Reorder Alert Level</label><input type="number" id="fReorder" min="0" placeholder="3"></div>
+        <div>
+          <label>Reorder Alert Level</label>
+          <input type="number" id="fReorder" min="0" placeholder="3">
+          <div class="muted" id="reorderHint" style="margin-top:4px;">&nbsp;</div>
+        </div>
       </div>
       <div class="action-row" style="margin-top:12px;">
         <button class="btn" onclick="saveBook()">Save Book</button>
@@ -1144,6 +1181,19 @@
       <button class="btn secondary" onclick="toggleReceiptSize()">Switch Paper Size</button>
       <button class="btn" onclick="window.print()">🖨️ Print</button>
       <button class="btn secondary" onclick="closeReceipt()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Modal -->
+<div id="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+  <div class="confirm-box">
+    <div class="confirm-icon" id="confirmIcon" aria-hidden="true"></div>
+    <h2 id="confirmTitle">Are you sure?</h2>
+    <p class="confirm-text" id="confirmText"></p>
+    <div class="confirm-actions">
+      <button class="btn secondary" type="button" id="confirmCancel">Cancel</button>
+      <button class="btn danger" type="button" id="confirmOk">Delete</button>
     </div>
   </div>
 </div>
@@ -1471,8 +1521,15 @@ async function doLogin(){
 async function doLogout(){
   let pending = 0;
   try{ pending = await outboxCount(); }catch(e){}
-  if(pending && !confirm(pending + ' change' + (pending===1?'':'s') + ' on this device have not reached the server yet. '
-      + 'Signing out erases the local copy and loses them. Sign out anyway?')) return;
+  if(pending){
+    const ok = await askConfirm({
+      title: 'Sign out with unsynced work?',
+      message: '<b>' + pending + ' change' + (pending===1?'':'s') + '</b> on this device have not reached the server yet. '
+               + 'Signing out erases the local copy and loses them.',
+      confirmText: 'Sign out anyway'
+    });
+    if(!ok) return;
+  }
   try{ await sb.auth.signOut(); }catch(e){}
   await clearLocal();
   currentUser = null;
@@ -1585,6 +1642,9 @@ function init(){
   document.getElementById('discountValue').addEventListener('input', renderCart);
   document.getElementById('discountType').addEventListener('change', onDiscountTypeChange);
   document.getElementById('taxPct').addEventListener('input', renderCart);
+  document.getElementById('fStock').addEventListener('input', updateReorderSuggestion);
+  document.getElementById('fReorder').addEventListener('input', updateReorderSuggestion);
+  updateReorderSuggestion();
   applyDiscountMode();
   loadSettingsForm();
   applyStoreHeader();
@@ -1802,6 +1862,30 @@ function getDiscount(subtotal){
 }
 
 /* ---------- Inventory ---------- */
+/* Reorder alert level follows the stock quantity: the placeholder shows 20% of
+   whatever stock was just typed, and a blank field saves exactly that. Typing a
+   number overrides it, and the typed value is left alone from then on. */
+const REORDER_PCT = 0.20;
+
+function suggestedReorder(){
+  const stock = Math.trunc(numVal('fStock', 0));
+  if(!(stock > 0)) return 3;                       // no stock yet: keep the old default
+  return Math.max(1, Math.round(stock * REORDER_PCT));
+}
+
+function updateReorderSuggestion(){
+  const field = document.getElementById('fReorder');
+  if(!field) return;
+  const n = suggestedReorder();
+  field.placeholder = String(n);
+  const hint = document.getElementById('reorderHint');
+  if(!hint) return;
+  const hasStock = Math.trunc(numVal('fStock', 0)) > 0;
+  hint.innerHTML = (isBlank('fReorder') && hasStock)
+    ? 'Leaving this blank uses ' + n + ' (20% of stock)'
+    : '&nbsp;';
+}
+
 function resetForm(){
   document.getElementById('editId').value='';
   document.getElementById('fTitle').value='';
@@ -1813,13 +1897,14 @@ function resetForm(){
   document.getElementById('fStock').value='';
   document.getElementById('fReorder').value='';
   document.getElementById('invFormTitle').textContent='Add New Book';
+  updateReorderSuggestion();
 }
 
 async function saveBook(){
   const title = document.getElementById('fTitle').value.trim();
   const price = numVal('fPrice', 0);
   const stock = Math.trunc(numVal('fStock', 0));
-  const reorderLevel = Math.trunc(numVal('fReorder', 3));   // blank = the placeholder's 3
+  const reorderLevel = Math.trunc(numVal('fReorder', suggestedReorder()));  // blank = the suggested 20%
   if(!title){ toast('Title is required'); return; }
   if(isBlank('fPrice') || price<=0){ toast('Selling price is required'); return; }
   const editId = document.getElementById('editId').value;
@@ -1862,12 +1947,21 @@ function editBook(id){
   setNum('fPrice', b.price);
   setNum('fStock', b.stock);
   document.getElementById('fReorder').value = b.reorderLevel;
+  updateReorderSuggestion();
   document.getElementById('invFormTitle').textContent='Edit Book';
   window.scrollTo(0,0);
 }
 
 async function deleteBook(id){
-  if(!confirm('Delete this book from inventory?')) return;
+  const b = db.books.find(x=>x.id===id);
+  const ok = await askConfirm({
+    title: 'Delete this book?',
+    message: b ? '<b>' + escapeHtml(b.title) + '</b> will be removed from your inventory. '
+                 + 'Past sales that include it are not affected.'
+               : 'This book will be removed from your inventory.',
+    confirmText: 'Delete book'
+  });
+  if(!ok) return;
   db.books = db.books.filter(b=>b.id!==id);
   cart = cart.filter(c=>c.bookId!==id);
   await mutate('books','delete', { id });
@@ -1925,7 +2019,14 @@ function editSupplier(id){
 }
 
 async function deleteSupplier(id){
-  if(!confirm('Delete this supplier?')) return;
+  const sup = db.suppliers.find(x=>x.id===id);
+  const ok = await askConfirm({
+    title: 'Delete this supplier?',
+    message: (sup ? '<b>' + escapeHtml(sup.name) + '</b>' : 'This supplier')
+             + ' will be removed. Recorded purchases stay, but lose their supplier link.',
+    confirmText: 'Delete supplier'
+  });
+  if(!ok) return;
   db.suppliers = db.suppliers.filter(x=>x.id!==id);
   db.purchases.forEach(p=>{ if(p.supplierId===id) p.supplierId = null; });
   await mutate('suppliers','delete', { id });
@@ -1944,7 +2045,7 @@ function renderSuppliers(){
       <td>${escapeHtml(s.phone||'-')}</td>
       <td>
         <button class="small btn secondary" onclick="editSupplier('${attrStr(s.id)}')">Edit</button>
-        <button class="small btn danger" onclick="deleteSupplier('${attrStr(s.id)}')">Del</button>
+        <button class="small btn danger" onclick="deleteSupplier('${attrStr(s.id)}')">Delete</button>
       </td>
     </tr>`).join('');
 }
@@ -2081,7 +2182,7 @@ function renderInventory(){
       <td class="${low?'low':''}">${b.stock}${low?' ⚠':''}</td>
       <td>
         <button class="small btn secondary" onclick="editBook('${attrStr(b.id)}')">Edit</button>
-        <button class="small btn danger" onclick="deleteBook('${attrStr(b.id)}')">Del</button>
+        <button class="small btn danger" onclick="deleteBook('${attrStr(b.id)}')">Delete</button>
       </td>`;
     tbody.appendChild(tr);
   });
@@ -2657,7 +2758,13 @@ function exportData(){
 async function importData(evt){
   const file = evt.target.files[0];
   if(!file) return;
-  if(!confirm('This will add the books from this backup file into your current inventory (as new entries). Continue?')) return;
+  const proceed = await askConfirm({
+    kind: 'neutral',
+    title: 'Import this backup?',
+    message: 'The books in this file are added to your inventory as new entries. Nothing already there is replaced.',
+    confirmText: 'Import'
+  });
+  if(!proceed) return;
   const reader = new FileReader();
   reader.onload = async e => {
     try{
@@ -2787,6 +2894,51 @@ async function runWipe(){
     toast(done.length === WIPE_TARGETS.length ? 'All data erased' : 'Erased: ' + done.join(', '));
   }
 }
+
+/* ---------- Confirmation dialog ----------
+   Replaces window.confirm, which some webviews (including the desktop build)
+   suppress, and which cannot be styled. Resolves true only on the confirm
+   button; Escape, the backdrop and Cancel all resolve false. */
+const CONFIRM_ICONS = {
+  danger:'<path d="M4 7h16"/><path d="M9.5 7V5.2A1.2 1.2 0 0 1 10.7 4h2.6a1.2 1.2 0 0 1 1.2 1.2V7"/><path d="M6.5 7l.8 12.1A1.9 1.9 0 0 0 9.2 21h5.6a1.9 1.9 0 0 0 1.9-1.9L17.5 7"/><path d="M10.5 11v6M13.5 11v6"/>',
+  neutral:'<circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v5h1"/>'
+};
+
+let confirmResolve = null;
+function askConfirm(opts){
+  const modal = document.getElementById('confirm-modal');
+  if(!modal) return Promise.resolve(window.confirm(opts.message || 'Are you sure?'));
+  const box = modal.querySelector('.confirm-box');
+  const kind = opts.kind === 'neutral' ? 'neutral' : 'danger';
+  box.classList.toggle('is-neutral', kind === 'neutral');
+  document.getElementById('confirmIcon').innerHTML =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'
+    + CONFIRM_ICONS[kind] + '</svg>';
+  document.getElementById('confirmTitle').textContent = opts.title || 'Are you sure?';
+  document.getElementById('confirmText').innerHTML = opts.message || '';
+  const okBtn = document.getElementById('confirmOk');
+  okBtn.textContent = opts.confirmText || 'Delete';
+  okBtn.className = 'btn ' + (kind === 'neutral' ? '' : 'danger');
+  document.getElementById('confirmCancel').textContent = opts.cancelText || 'Cancel';
+  modal.classList.add('show');
+  setTimeout(()=>okBtn.focus(), 0);
+  return new Promise(resolve=>{ confirmResolve = resolve; });
+}
+function closeConfirm(answer){
+  const modal = document.getElementById('confirm-modal');
+  if(modal) modal.classList.remove('show');
+  const resolve = confirmResolve;
+  confirmResolve = null;
+  if(resolve) resolve(!!answer);
+}
+document.getElementById('confirmOk').addEventListener('click', ()=>closeConfirm(true));
+document.getElementById('confirmCancel').addEventListener('click', ()=>closeConfirm(false));
+document.getElementById('confirm-modal').addEventListener('click', e=>{
+  if(e.target.id === 'confirm-modal') closeConfirm(false);
+});
+document.addEventListener('keydown', e=>{
+  if(e.key === 'Escape' && confirmResolve) closeConfirm(false);
+});
 
 /* ---------- Theme (light / dark) ---------- */
 const schemeMedia = window.matchMedia('(prefers-color-scheme: dark)');
