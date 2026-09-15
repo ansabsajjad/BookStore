@@ -1,16 +1,28 @@
 name: Release Windows app
 
-# Push a version tag to cut a release:
-#   git tag v1.0.1 && git push BookStore v1.0.1
+# Pushing to main updates the WEBSITE only — Vercel watches the branch.
+# The desktop app is built from a version tag, and nothing else:
 #
-# The job builds the installer, signs the update bundle and publishes both —
-# plus the latest.json the installed app polls — to a GitHub Release.
+#   git tag v1.0.1
+#   git push origin v1.0.1
+#
+# That is the whole ritual. The version is taken from the tag and written into
+# tauri.conf.json before the build, so there is no file to remember to edit —
+# and no chance of shipping a release that every installed copy ignores because
+# it announced itself as the version they already had.
+#
+# Installed copies check for a new release each time they start and update
+# themselves, so nobody has to download an installer again.
 
 on:
   push:
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to build, e.g. 1.0.1'
+        required: true
 
 jobs:
   release:
@@ -25,6 +37,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: lts/*
+
+      # Must run before the build: this is what the installed app compares
+      # against when it decides whether there is anything new to fetch.
+      - name: Take the version from the tag
+        shell: bash
+        run: node scripts/sync-version.mjs "${{ github.event.inputs.version || github.ref_name }}"
 
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
@@ -44,8 +62,8 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
-          tagName: ${{ github.ref_name }}
-          releaseName: 'Bookstore Manager ${{ github.ref_name }}'
+          tagName: ${{ github.event.inputs.version && format('v{0}', github.event.inputs.version) || github.ref_name }}
+          releaseName: 'Bookstore Manager ${{ github.event.inputs.version || github.ref_name }}'
           releaseBody: 'Installed copies update themselves the next time they start.'
           releaseDraft: false
           prerelease: false
